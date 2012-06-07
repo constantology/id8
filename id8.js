@@ -1,18 +1,186 @@
-!function(m8) {
+!function(util, Name) {
     "use strict";
-    function rm(k) {
-        delete this[k];
+    function __lib__(name_or_type) {
+        var Class = typeof name_or_type == "function" && util.type(name_or_type) == "class" ? name_or_type : getClass(name_or_type);
+        if (!Class) throw new Error(Name + " factory: No Class found with a name or type of " + name_or_type);
+        return Class.create.apply(null, Array.coerce(arguments, 1));
     }
-    var U, id8;
-    m8.x.cache("Function", function(Type) {
-        m8.def(Type.prototype, "callback", m8.describe(function(conf) {
-            return (new id8.Callback(this, conf)).fire.mimic(this);
+    function NS(name) {
+        return "^" + Name + "." + name;
+    }
+    function define(name, descriptor) {
+        var Class, Constructor, module = descriptor.module, namespace = name.split("."), path;
+        delete descriptor.module;
+        name = name.replace(re_valid_name, "");
+        descriptor.type || (descriptor.type = name.toLowerCase().split(".").join("-"));
+        Class = __lib__.Class(descriptor);
+        Constructor = Class.constructor[__singleton__] ? Class.constructor : Class;
+        path = util.bless(namespace.slice(0, -1), module);
+        util.def(Constructor, __classname__, util.describe(name, "w"), true);
+        register(Constructor);
+        return path[namespace.pop()] = Class;
+    }
+    function getClass(name_or_type) {
+        return registered_path[name_or_type] || registered_type[name_or_type] || registered_path[Name + "." + name_or_type] || registered_type[lc_Name + "-" + name_or_type];
+    }
+    function register(Class) {
+        var name = Class[__classname__], type = Class.prototype[__type__];
+        if (name in registered_path || type in registered_type) throw new Error(Name + ".define: there is already a Class called: " + name);
+        return registered_path[name] = registered_type[type] = Class;
+    }
+    function sequence(property, Class) {
+        var res = [], val;
+        typeof Class != "object" || (Class = Class.constructor);
+        if (typeof Class == "function" && util.type(Class) == "class") {
+            do {
+                !(val = Object.value(Class, property)) || res.push(val);
+            } while (Class = Class[__super__]);
+        }
+        return res;
+    }
+    var __classname__ = "__classname__", __name__ = "__name__", __singleton__ = "__singleton__", __super__ = "__super__", __type__ = "__type__", lc_Name = Name.toLowerCase(), re_valid_name = /[^A-Za-z0-9_\.]/g, registered_path = util.obj(), registered_type = util.obj(), sequence_class = sequence.bind(null, __classname__), sequence_type = sequence.bind(null, "prototype." + __type__);
+    util.defs(__lib__, {
+        __name__ : {
+            value : Name
+        },
+        __type__ : {
+            value : "library"
+        },
+        define : define,
+        getClass : getClass
+    }, "w", true);
+    !function() {
+        function Class(setup) {
+            var config = make_configuration(setup), Constructor = make_class(config);
+            return config.singleton ? make_singleton(Constructor, config) : Constructor;
+        }
+        function create() {
+            return singleton(this) || this.apply(Object.create(this.prototype), arguments);
+        }
+        function decorate(Constructor) {
+            util.def(Constructor, "create", util.describe(create.bind(Constructor), "r"), true);
+            util.def(Constructor, __type__, class_type, true);
+            return Constructor;
+        }
+        function extract_prototype_descriptors(config) {
+            return Object.keys(config).reduce(function(o, k) {
+                if (!util.got(default_prop_names, k)) {
+                    o[k] = config[k];
+                    delete config[k];
+                }
+                return o;
+            }, util.obj());
+        }
+        function get_descriptor(o, k) {
+            var descriptor = Object.getOwnPropertyDescriptor(o, k) || (typeof o[k] == "function" ? util.describe(o[k], "cw") : default_super_descriptor);
+            descriptor.writable = true;
+            return descriptor;
+        }
+        function is(instance, Class) {
+            switch (typeof Class) {
+              case "function":
+                return instance instanceof Class;
+              case "string":
+                return (Class = getClass(Class)) ? instance instanceof Class : false;
+            }
+            return false;
+        }
+        function make_class(config) {
+            function Class_constructor() {
+                return this instanceof Class_constructor ? singleton(this.constructor) || Constructor.apply(this, arguments) : create.apply(Class_constructor, arguments);
+            }
+            var constructor = config.constructor, super_descriptor = get_descriptor(config.extend.prototype, "constructor"), Constructor = make_method(constructor, super_descriptor);
+            Class_constructor.prototype = make_prototype(config);
+            Class_constructor.prototype.constructor = Class_constructor;
+            util.def(Class_constructor, __super__, super_descriptor, true);
+            if (constructor[__name__] != "anonymous") util.def(Class_constructor, __classname__, util.describe(constructor[__name__], "w"));
+            return decorate(Class_constructor.mimic(constructor));
+        }
+        function make_configuration(setup) {
+            var config = Object.keys(setup || util.obj()).reduce(function(o, k) {
+                o[k] = setup[k];
+                return o;
+            }, util.obj());
+            if (typeof config.extend == "string") config.extend = registered_path[config.extend] || registered_type[config.extend];
+            if (typeof config.extend != "function") config.extend = Object;
+            if (typeof config.constructor != "function" || config.constructor === Object) config.constructor = config.extend.valueOf();
+            if (typeof config.type != "string" && config.constructor !== Object && config.constructor.__name__ != "anonymous") config.type = String(config.constructor.__name__).toLowerCase();
+            return config;
+        }
+        function make_method(method, super_descriptor, name) {
+            super_descriptor = typeof super_descriptor != "object" || method.valueOf() === super_descriptor.value.valueOf() ? default_super_descriptor : super_descriptor || default_super_descriptor;
+            return function Class_instance_method() {
+                var a = arguments, descriptor = get_descriptor(this, "parent"), return_value, u;
+                util.def(this, "parent", super_descriptor || default_super_descriptor, true);
+                return_value = method.apply(this, util.tostr(a[0]) === "[object Arguments]" ? a[0] : a);
+                util.def(this, "parent", descriptor, true);
+                return this.chain !== false && return_value === u ? this : return_value;
+            }.mimic(method, name);
+        }
+        function make_prototype(config) {
+            var descriptor = extract_prototype_descriptors(config), super_class = config.extend, processed = util.obj(), prototype = Object.create(super_class.prototype);
+            Object.keys(descriptor).forEach(function(k) {
+                var description = descriptor[k];
+                switch (util.nativeType(description)) {
+                  case "object":
+                    break;
+                  case "function":
+                    description = util.describe(make_method(description, get_descriptor(prototype, k), k), "cw");
+                    break;
+                  default:
+                    description = util.describe(description, "ew");
+                }
+                processed[k] = true;
+                util.def(prototype, k, description, true);
+            });
+            Object.getOwnPropertyNames(prototype).forEach(function(k) {
+                if (k in processed || typeof prototype[k] != "function") return;
+                util.def(prototype, k, util.describe(make_method(prototype[k], default_super_descriptor), "cw"), true);
+            });
+            util.def(prototype, __type__, util.describe(config.type, "w"), true);
+            util.def(prototype, "parent", default_super_descriptor, true);
+            return prototype;
+        }
+        function make_singleton(Constructor, config) {
+            var instance = config.singleton === true ? new Constructor : Constructor.create.apply(null, [].concat(config.singleton));
+            util.def(Constructor, __singleton__, util.describe({
+                value : instance
+            }, "r"));
+            return instance;
+        }
+        function match_type(Class, type) {
+            return Class[__classname__] === type || Class.prototype[__type__] === type;
+        }
+        function singleton(Constructor) {
+            return !Constructor ? null : Constructor[__singleton__] || null;
+        }
+        function to_obj(o, k) {
+            o[k] = true;
+            return o;
+        }
+        function type(instance) {
+            var constructor = instance.constructor, type = constructor[__classname__] || constructor[__name__];
+            return type === "Class_constructor" ? "Anonymous" : type;
+        }
+        var class_type = util.describe("class", "r"), default_prop_names = "constructor extend mixin singleton type".split(" ").reduce(to_obj, util.obj()), default_super_descriptor = util.describe(util.noop, "cw");
+        util.defs(__lib__, {
+            Class : Class,
+            is : is,
+            type : type
+        }, "r");
+    }();
+    util.x.cache("Function", function(Type) {
+        util.def(Type.prototype, "callback", util.describe(function(conf) {
+            return (new __lib__.Callback(this, conf)).fire.mimic(this);
         }, "w"));
     });
-    m8.x.cache("Object", function(Type) {
-        m8.defs(Type, {
+    util.x.cache("Object", function(Type) {
+        function rm(k) {
+            delete this[k];
+        }
+        util.defs(Type, {
             key : function(o, v) {
-                for (var k in o) if (m8.has(o, k) && o[k] === v) return k;
+                for (var k in o) if (util.has(o, k) && o[k] === v) return k;
                 return null;
             },
             remove : function(o, keys) {
@@ -21,149 +189,14 @@
             }
         }, "w");
     });
-    m8.x(Object, Array, Boolean, Function);
-    !function() {
-        id8 = function(n) {
-            var C = m8.type(n) == "class" ? n : reg_type[n] || reg_type["id8_" + n] || reg_path[n];
-            if (!C) new Error(n + " does not match any registered id8.Class.");
-            return C.create.apply(null, Array.coerce(arguments, 1));
-        };
-        function Class(path, desc) {
-            if (!desc && m8.nativeType(path) == "object") {
-                desc = path;
-                path = "";
-            }
-            var C, name, ns, _ctor, type, _proto = m8.obj(), _super = desc.extend || Object, mod = desc.module, mixin = desc.mixin || dumb, singleton = desc.singleton;
-            m8.nativeType(_super) != "string" || (_super = reg_path[_super] || reg_type[_super]);
-            _ctor = desc.constructor !== Object ? desc.constructor : _super;
-            if (path) {
-                ns = path.split(".");
-                name = ns.pop();
-                ns = m8.bless(ns, mod);
-            }
-            m8.def(_proto, "parent", desc_noop, true);
-            m8.def(_proto, "constructor", m8.describe(ctor(_ctor, _super, name, _proto), "w"), true);
-            type = getType(desc.type || path, C = _proto.constructor);
-            m8.def(C, "__type__", m8.describe("class", "w"), true);
-            m8.def(_proto, "__type__", m8.describe(type, "w"), true);
-            Object.remove(desc, defaults);
-            C.prototype = apply(_proto, m8.copy(desc, mixin));
-            m8.def(C, "create", m8.describe(create(extend(C, _super)), "w"), true);
-            path = path.replace(re_root, "");
-            if (singleton) {
-                m8.def(C, "singleton", m8.describe({
-                    value : singleton === true ? new C : C.create.apply(C, [].concat(singleton))
-                }, "w"));
-                register(C, path, type);
-                C = C.singleton;
-            } else if (path) register(C, path, type);
-            !(name && ns) || m8.def(ns, name, m8.describe({
-                value : C
-            }, "w"));
-            return C;
-        }
-        function apply(proto, desc) {
-            Object.reduce(desc, function(p, v, k) {
-                switch (m8.nativeType(v)) {
-                  case "object":
-                    m8.def(p, k, v, true);
-                    break;
-                  default:
-                    p[k] = v;
-                }
-                return p;
-            }, proto);
-            return proto;
-        }
-        function create(C) {
-            return function create() {
-                return singleton(C) || C.apply(Object.create(C.prototype), arguments);
-            };
-        }
-        function ctor(m, s, name, P) {
-            var C = wrap(m, s, name), Ctor = function() {
-                var ctx = this === U ? null : this, ctor = ctx ? ctx.constructor : null;
-                return singleton(ctor) || C.apply(is(ctx, Ctor) ? ctx : Object.create(P), arguments);
-            };
-            return Ctor.mimic(m, name);
-        }
-        function extend(C, Sup) {
-            if (!("__super" in C.prototype)) {
-                var p = C.prototype, sp = Sup.prototype;
-                Object.keys(sp).forEach(function(k) {
-                    if (k in reserved) return;
-                    switch (m8.type(sp[k])) {
-                      case "function":
-                        p[k] = m8.nativeType(p[k]) != "function" ? wrap(sp[k], m8.noop, k) : wrap(p[k], sp[k], k);
-                        break;
-                      default:
-                        k in p || m8.def(p, k, Object.getOwnPropertyDescriptor(sp, k), true);
-                    }
-                });
-                Object.keys(p).forEach(function(k) {
-                    !(m8.nativeType(p[k]) == "function" && (!(k in sp) || p[k].valueOf() !== sp[k].valueOf())) || (p[k] = wrap(p[k], m8.noop, k));
-                });
-                sp = m8.describe({
-                    value : Object.create(Sup.prototype)
-                }, "w");
-                m8.def(C, "__super", sp);
-                m8.def(C.prototype, "__super", sp);
-            }
-            return C;
-        }
-        function getType(type, ctor) {
-            return (!m8.empty(type) ? type.replace(re_root, "").replace(re_dot, "_") : ctor.__name__).toLowerCase();
-        }
-        function is(o, C) {
-            if (o && C) {
-                if (o instanceof C) return true;
-                if (!(o = o.constructor)) return false;
-                do {
-                    if (o === C) return true;
-                } while (o.__super && (o = o.__super.constructor));
-            }
-            return false;
-        }
-        function register(C, path, type) {
-            var err, err_msg = path + ERR_MSG;
-            !path || !(path in reg_path) || (err = true, console.log(err_msg + "Class"));
-            !type || !(type in reg_type) || (err = true, console.log(err_msg + "Type"));
-            if (err) new Error("id8.Class overwrite error.");
-            reg_path[path] = reg_type[type] = C;
-        }
-        function singleton(C) {
-            return !C ? null : C.singleton || null;
-        }
-        function type(c) {
-            var ctor = c.constructor, k;
-            for (k in reg_path) if (reg_path[k] === ctor) return k;
-            return ctor.__name__ != "anonymous" ? ctor.__name__ : "Anonymous";
-        }
-        function wrap(m, s, name) {
-            return function() {
-                var o, p = Object.getOwnPropertyDescriptor(this, "parent") || desc_noop;
-                p.writable = true;
-                m8.def(this, "parent", s ? m8.describe(s, "cw") : desc_noop, true);
-                o = m.apply(this, arguments);
-                m8.def(this, "parent", p, true);
-                return this.chain !== false && o === U ? this : o;
-            }.mimic(m, name);
-        }
-        var ERR_MSG = " already exists. Cannot override existing ", defaults = "constructor extend mixin module singleton type".split(" "), desc_noop = m8.describe(m8.noop, "cw"), dumb = m8.obj(), re_dot = /\./g, re_root = /^\u005E/, reg_path = m8.obj(), reg_type = m8.obj(), reserved = m8.obj();
-        reserved.constructor = reserved.parent = reserved.__super = reserved.__type__ = true;
-        m8.defs(id8, {
-            Class : Class,
-            is : is,
-            type : type
-        }, "w");
-    }();
-    m8.def(id8, "m8", m8.describe({
-        value : m8
+    util.x(Object, Array, Boolean, Function);
+    util.def(__lib__, util.__name__, util.describe({
+        value : util
     }, "r"));
-    m8.ENV != "commonjs" ? m8.def(m8.global, "id8", m8.describe({
-        value : id8
-    }, "r")) : module.exports = id8;
-    id8.Class("^id8.Callback", function() {
+    util.ENV != "commonjs" ? util.def(util.global, Name, util.describe({
+        value : __lib__
+    }, "r")) : module.exports = __lib__;
+    __lib__.define(NS("Callback"), function() {
         function buffer() {
             if (bid in this) return this;
             this[bid] = setTimeout(buffer_stop.bind(this), this.buffer);
@@ -182,29 +215,29 @@
         var bid = "bufferId", tid = "timeoutId";
         return {
             constructor : function Callback(fn, conf) {
-                m8.copy(this, conf || {});
-                var desc = m8.describe(null, "w"), fire = (m8.type(this.buffer) == "number" ? buffer : this.exec).bind(this);
+                util.copy(this, conf || {});
+                var desc = util.describe(null, "w"), fire = (util.type(this.buffer) == "number" ? buffer : this.exec).bind(this);
                 desc.value = fn;
-                m8.def(this, "fn", desc);
+                util.def(this, "fn", desc);
                 desc.value = this;
-                m8.def(fire, "cb", desc);
+                util.def(fire, "cb", desc);
                 desc.value = fire;
-                m8.def(this, "fire", desc);
+                util.def(this, "fire", desc);
                 this.args || (this.args = []);
                 this.ctx || (this.ctx = this);
-                m8.type(this.delay) == "number" || (this.delay = null);
-                m8.type(this.times) == "number" && this.times > 0 || (this.times = 0);
+                util.type(this.delay) == "number" || (this.delay = null);
+                util.type(this.times) == "number" && this.times > 0 || (this.times = 0);
                 this.enable();
             },
             chain : true,
-            module : id8,
+            module : __lib__,
             buffer : null,
             count : 0,
             delay : null,
             times : 0,
             disable : function() {
                 this.disabled = true;
-                this.handleEvent = m8.noop;
+                this.handleEvent = util.noop;
             },
             enable : function() {
                 this.disabled = false;
@@ -213,8 +246,8 @@
             exec : function() {
                 if (this.disabled) return;
                 this.times === 0 || this.times > ++this.count || this.disable();
-                var a = Array.coerce(arguments), me = this, ctx = me.ctx, ms = me.delay, t = m8.type(a[0]), v;
-                t && (eventType(t) || t == "id8_observer") ? a.splice.apply(a, [ 1, 0 ].concat(me.args)) : a.unshift.apply(a, me.args);
+                var a = Array.coerce(arguments), me = this, ctx = me.ctx, ms = me.delay, t = util.type(a[0]), v;
+                t && (eventType(t) || t == Name + "-observer") ? a.splice.apply(a, [ 1, 0 ].concat(me.args)) : a.unshift.apply(a, me.args);
                 ms === null ? v = me.fn.apply(ctx, a) : me[tid] = setTimeout(function() {
                     me.fn.apply(ctx, a);
                 }, ms);
@@ -229,14 +262,14 @@
             }
         };
     }());
-    id8.Class("^id8.Hash", function() {
+    __lib__.define(NS("Hash"), function() {
         var ID = "__hashid__", cache = [];
         return {
             constructor : function Hash(o) {
-                m8.def(this, ID, m8.describe(cache.push(m8.obj()) - 1, "w"));
-                m8.nativeType(o) != "object" || this.set(o);
+                util.def(this, ID, util.describe(cache.push(util.obj()) - 1, "w"));
+                util.nativeType(o) != "object" || this.set(o);
             },
-            module : id8,
+            module : __lib__,
             keys : {
                 get : function() {
                     return Object.keys(cache[this[ID]]);
@@ -260,10 +293,10 @@
                 }, val);
             },
             clear : function() {
-                cache[this[ID]] = m8.obj();
+                cache[this[ID]] = util.obj();
             },
             clone : function() {
-                return new id8.Hash(this.valueOf());
+                return new __lib__.Hash(this.valueOf());
             },
             each : function(fn, ctx) {
                 var H = this, o = cache[H[ID]];
@@ -273,10 +306,10 @@
                 }, H);
             },
             get : function(k) {
-                return m8.has(cache[this[ID]], k) ? cache[this[ID]][k] : null;
+                return util.has(cache[this[ID]], k) ? cache[this[ID]][k] : null;
             },
             has : function(k) {
-                return m8.has(cache[this[ID]], k);
+                return util.has(cache[this[ID]], k);
             },
             key : function(v) {
                 return Object.key(cache[this[ID]], v);
@@ -288,10 +321,10 @@
                 }, val);
             },
             remove : function(k) {
-                return m8.has(cache[this[ID]], k) ? delete cache[this[ID]][k] : false;
+                return util.has(cache[this[ID]], k) ? delete cache[this[ID]][k] : false;
             },
             set : function(o, v) {
-                switch (m8.nativeType(o)) {
+                switch (util.nativeType(o)) {
                   case "object":
                     Object.keys(o).forEach(function(k) {
                         this.set(k, o[k]);
@@ -305,34 +338,34 @@
                 return JSON.stringify(cache[this[ID]]);
             },
             toString : function() {
-                return m8.tostr(cache[this[ID]]);
+                return util.tostr(cache[this[ID]]);
             },
             valueOf : function() {
-                return m8.copy(m8.obj(), cache[this[ID]]);
+                return util.copy(util.obj(), cache[this[ID]]);
             }
         };
     }());
-    id8.Class("^id8.Observer", function() {
+    __lib__.define(NS("Observer"), function() {
         function addObservers(observers) {
-            observers = m8.copy(m8.obj(), observers);
-            var ctx = observers[_ctx], k, l, o, opt = observers[_options], s;
-            Object.remove(observers, _ctx, _options);
+            observers = util.copy(util.obj(), observers);
+            var ctx = observers.ctx, k, l, o, opt = observers.options, s;
+            Object.remove(observers, "ctx", "options");
             for (k in observers) {
                 l = observers[k];
-                o = l[_options] === U ? l[_options] : opt;
-                s = l[_ctx] === U ? l[_ctx] : ctx;
-                switch (m8.nativeType(l)) {
+                o = l.options === U ? l.options : opt;
+                s = l.ctx === U ? l.ctx : ctx;
+                switch (util.nativeType(l)) {
                   case "function":
                     this.observe(k, l, ctx, opt);
                     break;
                   case "object":
-                    switch (m8.nativeType(l[_fn])) {
+                    switch (util.nativeType(l.fn)) {
                       case "function":
                       case "object":
-                        this.observe(k, l[_fn], s, o);
+                        this.observe(k, l.fn, s, o);
                         break;
                       case "array":
-                        l[_fn].forEach(function(fn) {
+                        l.fn.forEach(function(fn) {
                             this.observe(k, fn, s, o);
                         }, this);
                         break;
@@ -348,9 +381,9 @@
             return this;
         }
         function broadcast(cb) {
-            var args = this.args.concat(cb[_options].args), ctx = cb[_ctx] || this[_ctx], fire = cb.fire || cb[_fn];
-            if (!m8.nativeType(fire) == "function") return true;
-            if (!!Object.key(this[_ctx], cb[_fn])) args[0] !== this[_ctx] || args.shift(); else if (args[0] !== this[_ctx]) args.unshift(this[_ctx]);
+            var args = this.args.concat(cb.options.args), ctx = cb.ctx || this.ctx, fire = cb.fire || cb.fn;
+            if (!util.nativeType(fire) == "function") return true;
+            if (!!Object.key(this.ctx, cb.fn)) args[0] !== this.ctx || args.shift(); else if (args[0] !== this.ctx) args.unshift(this.ctx);
             return fire.apply(ctx, args) !== false;
         }
         function createRelayCallback(ctxr, ctx, evt) {
@@ -364,10 +397,10 @@
         function createSingleCallback(event, cb) {
             var ctx = this;
             return cb.fire = function Observer_singleCallback() {
-                ctx.ignore(event, cb[_fn], cb[_ctx]);
+                ctx.ignore(event, cb.fn, cb.ctx);
                 if (cb.fired) return;
                 cb.fired = true;
-                return cb[_fn].apply(cb[_ctx] || ctx, arguments);
+                return cb.fn.apply(cb.ctx || ctx, arguments);
             };
         }
         function find(e, o) {
@@ -377,10 +410,10 @@
         }
         function getObserver(r, v, k) {
             var m;
-            return k === this || m8.nativeType(m = this.match(k)) == "array" && m[0] === this ? r.concat(v) : r;
+            return k === this || util.nativeType(m = this.match(k)) == "array" && m[0] === this ? r.concat(v) : r;
         }
         function getObservers(o, e) {
-            return o[_observers].aggregate([], getObserver, e);
+            return o.listeners.aggregate([], getObserver, e);
         }
         function handleEvent(cb) {
             return function handleEvent() {
@@ -388,7 +421,7 @@
             }.mimic(cb.fire);
         }
         function matchCallback(o, cb) {
-            return (o.isCB === true ? cb[_fn].valueOf() === o[_ctx].fire : cb[_fn] === o[_fn]) && cb[_ctx] === o[_ctx] && cb.event === o.event;
+            return (o.isCB === true ? cb.fn.valueOf() === o.ctx.fire : cb.fn === o.fn) && cb.ctx === o.ctx && cb.event === o.event;
         }
         function relay() {
             return this.broadcast.apply(this, arguments);
@@ -396,54 +429,54 @@
         function wildCardEsc(e) {
             return e.replace(re_wc, ".*");
         }
-        var _broadcasting = "broadcasting", _ctx = "ctx", _destroyed = "destroyed", _fn = "fn", _observers = "listeners", _options = "options", _suspended = "observer_suspended", listener_id = 0, re_wc = /\*/g;
+        var U, listener_id = 0, re_wc = /\*/g;
         return {
             constructor : function Observer(observers) {
-                this[_broadcasting] = false;
-                this[_destroyed] = false;
-                this[_suspended] = false;
-                this[_observers] = id8.Hash();
-                m8.nativeType(observers) != "object" || this.observe(observers);
-                m8.nativeType(this.observers) != "object" || this.observe(this.observers), delete this.observers;
+                this.broadcasting = false;
+                this.destroyed = false;
+                this.observer_suspended = false;
+                this.listeners = __lib__("Hash");
+                util.nativeType(observers) != "object" || this.observe(observers);
+                util.nativeType(this.observers) != "object" || this.observe(this.observers), delete this.observers;
             },
-            module : id8,
+            module : __lib__,
             broadcast : function(event) {
-                if (this[_destroyed] || this[_suspended] || !this[_observers].length || !event) return;
+                if (this.destroyed || this.observer_suspended || !this.listeners.length || !event) return;
                 var args = Array.coerce(arguments, 1), e = getObservers(this, event);
                 if (!e.length) return;
-                this[_broadcasting] = event;
+                this.broadcasting = event;
                 e.every(broadcast, {
                     args : args,
                     ctx : this
                 });
-                this[_broadcasting] = false;
+                this.broadcasting = false;
             },
             buffer : function(ms, evt, fn, ctx, o) {
-                m8.nativeType(o) == "object" || (o = m8.obj());
+                util.nativeType(o) == "object" || (o = util.obj());
                 o.buffer = Number(ms);
                 this.observe(evt, fn, ctx, o);
             },
             delay : function(ms, evt, fn, ctx, o) {
-                m8.nativeType(o) == "object" || (o = m8.obj());
+                util.nativeType(o) == "object" || (o = util.obj());
                 o.delay = Number(ms);
                 this.observe(evt, fn, ctx, o);
             },
             destroy : function() {
-                if (this[_destroyed]) return true;
+                if (this.destroyed) return true;
                 if (this.broadcast("before:destroy") === false) return false;
-                this[_destroyed] = true;
+                this.destroyed = true;
                 this._destroy();
                 this.broadcast("destroy");
-                this[_suspended] = true;
-                delete this[_observers];
+                this.observer_suspended = true;
+                delete this.listeners;
                 return true;
             },
             ignore : function(event, fn, ctx) {
                 event = wildCardEsc(event.toLowerCase());
-                var e = this[_observers].get(event), i, o;
+                var e = this.listeners.get(event), i, o;
                 if (!e) return;
-                switch (m8.type(fn)) {
-                  case "id8_callback":
+                switch (util.type(fn)) {
+                  case Name + "-callback":
                     o = {
                         ctx : fn,
                         isCB : true
@@ -463,11 +496,11 @@
                 }
             },
             observe : function(event, fn, ctx, o) {
-                var cb, e = this[_observers], fnt, q;
-                if (m8.nativeType(event) == "object") return addObservers.call(this, event);
-                switch (fnt = m8.type(fn)) {
+                var cb, e = this.listeners, fnt, q;
+                if (util.nativeType(event) == "object") return addObservers.call(this, event);
+                switch (fnt = util.type(fn)) {
                   case "array":
-                    cb = m8.obj();
+                    cb = util.obj();
                     cb[event] = {
                         fn : fn,
                         options : o,
@@ -476,9 +509,9 @@
                     return addObservers.call(this, cb);
                   case "object":
                   case "nullobject":
-                  case "id8_callback":
+                  case Name + "-callback":
                     if ("handleEvent" in fn) {
-                        !(m8.nativeType(ctx) == "object" && o === U) || (o = ctx);
+                        !(util.nativeType(ctx) == "object" && o === U) || (o = ctx);
                         ctx = fn;
                         fn = handleEvent(fn);
                     }
@@ -489,7 +522,7 @@
                 }
                 event = wildCardEsc(event.toLowerCase());
                 (q = e.get(event)) || e.set(event, q = []);
-                switch (m8.nativeType(o)) {
+                switch (util.nativeType(o)) {
                   case "boolean":
                     o = {
                         single : !!o
@@ -501,10 +534,10 @@
                     };
                     break;
                   case "object":
-                    o = m8.copy(m8.obj(), o);
+                    o = util.copy(util.obj(), o);
                     break;
                   default:
-                    o = m8.obj();
+                    o = util.obj();
                 }
                 Array.isArray(o.args) || (o.args = []);
                 cb = {
@@ -514,21 +547,21 @@
                     id : ++listener_id,
                     options : o
                 };
-                cb.fire = (o.single ? createSingleCallback.call(this, event, cb) : cb[_fn]).callback({
+                cb.fire = (o.single ? createSingleCallback.call(this, event, cb) : cb.fn).callback({
                     args : o.args,
                     buffer : o.buffer,
-                    ctx : cb[_ctx],
+                    ctx : cb.ctx,
                     delay : o.delay
                 });
                 q.push(cb);
             },
             once : function(evt, fn, ctx, o) {
-                m8.nativeType(o) == "object" || (o = m8.obj());
+                util.nativeType(o) == "object" || (o = util.obj());
                 o.single = true;
                 this.observe(evt, fn, ctx, o);
             },
             purgeObservers : function(event) {
-                var e = this[_observers];
+                var e = this.listeners;
                 if (!event) {
                     e.clear();
                     return;
@@ -541,12 +574,12 @@
                 while (evt = e.shift()) this.observe(evt, createRelayCallback(this, o, evt), o);
             },
             resumeEvents : function() {
-                !this[_suspended] || (this[_suspended] = false, this.broadcast("observer:resumed"));
+                !this.observer_suspended || (this.observer_suspended = false, this.broadcast("observer:resumed"));
             },
             suspendEvents : function() {
-                this[_suspended] || (this[_suspended] = true, this.broadcast("observer:suspended"));
+                this.observer_suspended || (this.observer_suspended = true, this.broadcast("observer:suspended"));
             },
-            _destroy : m8.noop
+            _destroy : util.noop
         };
     }());
-}(typeof m8 != "undefined" ? m8 : typeof require != "undefined" ? require("m8") : null);
+}(typeof m8 != "undefined" ? m8 : typeof require != "undefined" ? require("m8") : null, "id8");

@@ -1,4 +1,4 @@
-id8.Class( '^id8.Callback', function() {
+__lib__.define( NS( 'Callback' ), function() {
 	function buffer() {
 		if ( bid in this ) return this;
 		this[bid] = setTimeout( buffer_stop.bind( this ), this.buffer );
@@ -12,31 +12,31 @@ id8.Class( '^id8.Callback', function() {
 
 	return {
 		constructor : function Callback( fn, conf ) {
-			m8.copy( this, conf || {} );
+			util.copy( this, conf || {} );
 
-			var desc = m8.describe( null, 'w' ),
-				fire = ( m8.type( this.buffer ) == 'number' ? buffer : this.exec ).bind( this );
+			var desc = util.describe( null, 'w' ),
+				fire = ( util.type( this.buffer ) == 'number' ? buffer : this.exec ).bind( this );
 
-			desc.value = fn;   m8.def( this, 'fn',   desc );
-			desc.value = this; m8.def( fire, 'cb',   desc );
-			desc.value = fire; m8.def( this, 'fire', desc );
+			desc.value = fn;   util.def( this, 'fn',   desc );
+			desc.value = this; util.def( fire, 'cb',   desc );
+			desc.value = fire; util.def( this, 'fire', desc );
 
 			this.args || ( this.args = [] );
 			this.ctx  || ( this.ctx  = this );
-			m8.type( this.delay ) == 'number' || ( this.delay = null );
-			m8.type( this.times ) == 'number' && this.times > 0 || ( this.times = 0 );
+			util.type( this.delay ) == 'number' || ( this.delay = null );
+			util.type( this.times ) == 'number' && this.times > 0 || ( this.times = 0 );
 
 			this.enable();
 		},
 		chain       : true,
-		module      : id8,
+		module      : __lib__,
 // properties
 		buffer      : null, count : 0,
 		delay       : null, times : 0,
 // methods
 		disable     : function() {
 			this.disabled    = true;
-			this.handleEvent = m8.noop;
+			this.handleEvent = util.noop;
 		},
 		enable      : function() {
 			this.disabled    = false;
@@ -47,9 +47,9 @@ id8.Class( '^id8.Callback', function() {
 			this.times === 0 || this.times > ++this.count || this.disable();
 
 			var a  = Array.coerce( arguments ), me = this, ctx = me.ctx,
-				ms = me.delay, t = m8.type( a[0] ), v;
+				ms = me.delay, t = util.type( a[0] ), v;
 
-			( t && ( eventType( t ) || t == 'id8_observer' ) )
+			( t && ( eventType( t ) || t == Name + '-observer' ) )
 			? a.splice.apply( a, [1, 0].concat( me.args ) )
 			: a.unshift.apply( a, me.args );
 

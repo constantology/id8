@@ -1,19 +1,19 @@
-id8.Class( '^id8.Observer', function() {
+__lib__.define( NS( 'Observer' ), function() {
 	function addObservers( observers ) {
-		observers = m8.copy( m8.obj(), observers );
-		var ctx = observers[_ctx], k, l, o, opt = observers[_options], s;
-		Object.remove( observers, _ctx, _options );
+		observers = util.copy( util.obj(), observers );
+		var ctx = observers.ctx, k, l, o, opt = observers.options, s;
+		Object.remove( observers, 'ctx', 'options' );
 
 		for ( k in observers ) {
 			l = observers[k];
-			o = l[_options] === U ? l[_options] : opt;
-			s = l[_ctx]     === U ? l[_ctx]     : ctx;
+			o = l.options === U ? l.options : opt;
+			s = l.ctx     === U ? l.ctx     : ctx;
 
-			switch ( m8.nativeType( l ) ) {
+			switch ( util.nativeType( l ) ) {
 				case 'function' : this.observe( k, l, ctx, opt );                                              break;
-				case 'object'   : switch( m8.nativeType( l[_fn] ) ) {
-					case 'function' : case 'object' : this.observe( k, l[_fn], s, o );                         break;
-					case 'array'    : l[_fn].forEach( function( fn ) { this.observe( k, fn, s, o ); }, this ); break;
+				case 'object'   : switch( util.nativeType( l.fn ) ) {
+					case 'function' : case 'object' : this.observe( k, l.fn, s, o );                         break;
+					case 'array'    : l.fn.forEach( function( fn ) { this.observe( k, fn, s, o ); }, this ); break;
 				} break;
 				case 'array'    : l.forEach( function( fn ) { this.observe( k, fn, ctx, opt ); }, this );      break;
 			}
@@ -22,15 +22,15 @@ id8.Class( '^id8.Observer', function() {
 	}
 
 	function broadcast( cb ) {
-		var args = this.args.concat( cb[_options].args ),
-			ctx  = cb[_ctx] || this[_ctx],
-			fire = cb.fire  || cb[_fn];
+		var args = this.args.concat( cb.options.args ),
+			ctx  = cb.ctx || this.ctx,
+			fire = cb.fire  || cb.fn;
 
-		if ( !m8.nativeType( fire ) == 'function' ) return true;
+		if ( !util.nativeType( fire ) == 'function' ) return true;
 
-		if ( !!Object.key( this[_ctx], cb[_fn] ) )                     // if the original callback function is a method on this Observer
-			args[0] !== this[_ctx] || args.shift();                    // then if the first argument is the Observer Object.remove it, as it's an internal event listener
-		else if ( args[0] !== this[_ctx] ) args.unshift( this[_ctx] ); // otherwise, if the Observer is not the first argument, then add it, so the callback knows what Observer fired it
+		if ( !!Object.key( this.ctx, cb.fn ) )                     // if the original callback function is a method on this Observer
+			args[0] !== this.ctx || args.shift();                    // then if the first argument is the Observer Object.remove it, as it's an internal event listener
+		else if ( args[0] !== this.ctx ) args.unshift( this.ctx ); // otherwise, if the Observer is not the first argument, then add it, so the callback knows what Observer fired it
 
 		return ( fire.apply( ctx, args ) !== false );                  // if a callback explicitly returns false, then we want to stop broadcasting
 	}
@@ -49,10 +49,10 @@ id8.Class( '^id8.Observer', function() {
 	function createSingleCallback( event, cb ) {
 		var ctx = this;
 		return ( cb.fire = function Observer_singleCallback() {
-			ctx.ignore( event, cb[_fn], cb[_ctx] );
+			ctx.ignore( event, cb.fn, cb.ctx );
 			if ( cb.fired ) return;
 			cb.fired = true;
-			return cb[_fn].apply( cb[_ctx] || ctx, arguments );
+			return cb.fn.apply( cb.ctx || ctx, arguments );
 		} );
 	}
 
@@ -65,81 +65,77 @@ id8.Class( '^id8.Observer', function() {
 
 	function getObserver( r, v, k ) {
 		var m;
-		return ( k === this || ( m8.nativeType( m = this.match( k ) ) == 'array' && m[0] === this ) ) ? r.concat( v ) : r;
+		return ( k === this || ( util.nativeType( m = this.match( k ) ) == 'array' && m[0] === this ) ) ? r.concat( v ) : r;
 	}
-	function getObservers( o, e )   { return o[_observers].aggregate( [], getObserver, e ); }
+	function getObservers( o, e )   { return o.listeners.aggregate( [], getObserver, e ); }
 
 	function handleEvent( cb ) {
 		return function handleEvent() { return cb.handleEvent.apply( cb, arguments ); }.mimic( cb.fire );
 	}
 
 	function matchCallback( o, cb ) {
-		return ( o.isCB === true ? cb[_fn].valueOf() === o[_ctx].fire : cb[_fn] === o[_fn] ) && cb[_ctx] === o[_ctx] && cb.event === o.event;
+		return ( o.isCB === true ? cb.fn.valueOf() === o.ctx.fire : cb.fn === o.fn ) && cb.ctx === o.ctx && cb.event === o.event;
 	}
 
 	function relay() { return this.broadcast.apply( this, arguments ); }
 
 	function wildCardEsc( e ) { return e.replace( re_wc, '.*' ); }
 
-	var _broadcasting = 'broadcasting',      _ctx         = 'ctx',
-		_destroyed    = 'destroyed',         _fn          = 'fn',
-		_observers    = 'listeners',         _options     = 'options',
-		_suspended    = 'observer_suspended', listener_id = 0,
-		 re_wc        = /\*/g;
+	var U, listener_id = 0, re_wc = /\*/g;
 
 	return {
 		constructor    : function Observer( observers ) {
-			this[_broadcasting] = false; this[_destroyed] = false;
-			this[_suspended]    = false; this[_observers] = id8.Hash();
+			this.broadcasting       = false; this.destroyed = false;
+			this.observer_suspended = false; this.listeners = __lib__( 'Hash' );
 
-			m8.nativeType( observers )      != 'object' || this.observe( observers );
-			m8.nativeType( this.observers ) != 'object' || this.observe( this.observers ), delete this.observers;
+			util.nativeType( observers )      != 'object' || this.observe( observers );
+			util.nativeType( this.observers ) != 'object' || this.observe( this.observers ), delete this.observers;
 		},
-		module         : id8,
+		module         : __lib__,
 
 // public methods
 		broadcast      : function( event ) {
-			if ( this[_destroyed] || this[_suspended] || !this[_observers].length || !event ) return;
+			if ( this.destroyed || this.observer_suspended || !this.listeners.length || !event ) return;
 
 			var args = Array.coerce( arguments, 1 ),
-				e    = getObservers( this, event ); // this[_observers].get( event ).slice(); // slice: so we can add/ remove observers while this event is firing without disrupting the queue;
+				e    = getObservers( this, event ); // this.listeners.get( event ).slice(); // slice: so we can add/ remove observers while this event is firing without disrupting the queue;
 
 			if ( !e.length ) return; // if no event listeners, then don't worry
 
-			this[_broadcasting] = event;
+			this.broadcasting = event;
 
 // if a callback returns false then we want to stop broadcasting, every will do this, forEach won't!
 			e.every( broadcast, { args : args, ctx : this } );
 
-			this[_broadcasting] = false;
+			this.broadcasting = false;
 		},
 		buffer         : function( ms, evt, fn, ctx, o ) {
-			m8.nativeType( o ) == 'object' || ( o = m8.obj() ); o.buffer = Number( ms );
+			util.nativeType( o ) == 'object' || ( o = util.obj() ); o.buffer = Number( ms );
 			this.observe( evt, fn, ctx, o );
 		},
 		delay          : function( ms, evt, fn, ctx, o ) {
-			m8.nativeType( o ) == 'object' || ( o = m8.obj() ); o.delay = Number( ms );
+			util.nativeType( o ) == 'object' || ( o = util.obj() ); o.delay = Number( ms );
 			this.observe( evt, fn, ctx, o );
 		},
 		destroy        : function() {
-			if ( this[_destroyed] ) return true;
+			if ( this.destroyed ) return true;
 			if ( this.broadcast( 'before:destroy' ) === false ) return false;
-			this[_destroyed] = true;
+			this.destroyed = true;
 			this._destroy();
 			this.broadcast( 'destroy' );
-			this[_suspended] = true;
-			delete this[_observers];
+			this.observer_suspended = true;
+			delete this.listeners;
 			return true;
 		},
 		ignore         : function( event, fn, ctx ) {
 			event = wildCardEsc( event.toLowerCase() );
-			var e = this[_observers].get( event ), i, o;
+			var e = this.listeners.get( event ), i, o;
 
 			if ( !e ) return;
 
-			switch ( m8.type( fn ) ) {
-				case 'id8_callback' : o = { ctx : fn,          isCB : true }; break;
-				default             : o = { ctx : ctx || this, fn   : fn   };
+			switch ( util.type( fn ) ) {
+				case ( Name + '-callback' ) : o = { ctx : fn,          isCB : true }; break;
+				default                     : o = { ctx : ctx || this, fn   : fn   };
 			}
 			o.event = event;
 			o = find( e, o );
@@ -149,15 +145,15 @@ id8.Class( '^id8.Observer', function() {
 			}
 		},
 		observe        : function( event, fn, ctx, o ) {
-			var cb, e = this[_observers], fnt, q;
+			var cb, e = this.listeners, fnt, q;
 
-			if ( m8.nativeType( event ) == 'object' ) return addObservers.call( this, event );
-			switch ( ( fnt = m8.type( fn ) ) ) {
+			if ( util.nativeType( event ) == 'object' ) return addObservers.call( this, event );
+			switch ( ( fnt = util.type( fn ) ) ) {
 				case  'array' :
-					cb = m8.obj(); cb[event] = { fn : fn, options : o, ctx : ctx };
+					cb = util.obj(); cb[event] = { fn : fn, options : o, ctx : ctx };
 					return addObservers.call( this, cb );
-				case  'object' : case 'nullobject' : case 'id8_callback' : if ( 'handleEvent' in fn ) {
-					!( m8.nativeType( ctx ) == 'object' && o === U ) || ( o = ctx );
+				case  'object' : case 'nullobject' : case ( Name + '-callback' ) : if ( 'handleEvent' in fn ) {
+					!( util.nativeType( ctx ) == 'object' && o === U ) || ( o = ctx );
 					ctx = fn; fn = handleEvent( fn );
 				} break;
 				case 'string'  : !ctx || ( fn = ctx[fn] ); break;
@@ -166,28 +162,28 @@ id8.Class( '^id8.Observer', function() {
 			event = wildCardEsc( event.toLowerCase() );
 			( q = e.get( event ) ) || e.set( event, ( q = [] ) );
 
-			switch( m8.nativeType( o ) ) {
+			switch( util.nativeType( o ) ) {
 				case 'boolean' : o = { single : !!o };       break;
 				case 'number'  : o = { delay  :   o };       break;
-				case 'object'  : o = m8.copy( m8.obj(), o ); break;
-				default        : o = m8.obj();
+				case 'object'  : o = util.copy( util.obj(), o ); break;
+				default        : o = util.obj();
 			}
 
 			Array.isArray( o.args ) || ( o.args = [] );
 
 			cb      = { ctx : ctx || this, event : event, fn : fn, id : ++listener_id, options : o };
-			cb.fire = ( o.single ? createSingleCallback.call( this, event, cb ) : cb[_fn] ).callback( {
-				args : o.args, buffer : o.buffer, ctx : cb[_ctx], delay : o.delay
+			cb.fire = ( o.single ? createSingleCallback.call( this, event, cb ) : cb.fn ).callback( {
+				args : o.args, buffer : o.buffer, ctx : cb.ctx, delay : o.delay
 			} );
 			q.push( cb );
 		},
 		once           : function( evt, fn, ctx, o ) {
-			m8.nativeType( o ) == 'object' || ( o = m8.obj() );
+			util.nativeType( o ) == 'object' || ( o = util.obj() );
 			o.single = true;
 			this.observe( evt, fn, ctx, o );
 		},
 		purgeObservers : function( event ) {
-			var e = this[_observers];
+			var e = this.listeners;
 			if ( !event ) { e.clear(); return; }
 			event = event.toLowerCase();
 			!e.has( event ) || e.set( event, [] );
@@ -197,10 +193,10 @@ id8.Class( '^id8.Observer', function() {
 			while ( evt = e.shift() )
 				this.observe( evt, createRelayCallback( this, o, evt ), o );
 		},
-		resumeEvents   : function() { !this[_suspended] || ( this[_suspended] = false, this.broadcast( 'observer:resumed'   ) ); },
-		suspendEvents  : function() {  this[_suspended] || ( this[_suspended] = true,  this.broadcast( 'observer:suspended' ) ); },
+		resumeEvents   : function() { !this.observer_suspended || ( this.observer_suspended = false, this.broadcast( 'observer:resumed'   ) ); },
+		suspendEvents  : function() {  this.observer_suspended || ( this.observer_suspended = true,  this.broadcast( 'observer:suspended' ) ); },
 
 // internal methods
-		_destroy       : m8.noop
+		_destroy       : util.noop
 	};
 }() );

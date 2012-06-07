@@ -1,158 +1,164 @@
-!function() {
-// id8 is THE factory method for creating any class instance of a class created using id8.Class
-// that is why it is assinged in here, defined in id8.js
-	id8 = function( n ) {
-		var C = m8.type( n ) == 'class' ? n : reg_type[n] || reg_type['id8_' + n] || reg_path[n];
+;!function() {
+	function Class( setup ) {
+		var config      = make_configuration( setup ),
+			Constructor = make_class( config );
 
-		if ( !C ) new Error( n + ' does not match any registered id8.Class.' );
-
-		return C.create.apply( null, Array.coerce( arguments, 1 ) );
-	};
-
-	function Class( path, desc ) {
-		if ( !desc && m8.nativeType( path ) == 'object' ) {
-			desc = path; path = '';
-		}
-
-		var C, name, ns, _ctor, type,
-			_proto    = m8.obj(),
-			_super    = desc.extend || Object,
-			mod       = desc.module,
-			mixin     = desc.mixin  || dumb,
-			singleton = desc.singleton;
-
-		m8.nativeType( _super ) != 'string' || ( _super = reg_path[_super] || reg_type[_super] );
-
-		_ctor = desc.constructor !== Object ? desc.constructor : _super;
-
-		if ( path ) {
-			ns   = path.split( '.' );
-			name = ns.pop();
-			ns   = m8.bless( ns, mod );
-		}
-
-		m8.def( _proto, 'parent',      desc_noop, true );
-
-		m8.def( _proto, 'constructor', m8.describe( ctor( _ctor, _super, name, _proto ), 'w' ), true );
-
-		type = getType( desc.type || path, ( C = _proto.constructor ) );
-
-		m8.def(  C,     '__type__',    m8.describe( 'class', 'w' ), true );
-		m8.def( _proto, '__type__',    m8.describe(  type,   'w' ), true );
-
-		Object.remove( desc, defaults );
-
-		C.prototype = apply( _proto, m8.copy( desc, mixin ) );
-		m8.def( C, 'create', m8.describe( create( extend( C, _super ) ), 'w' ), true );
-
-		path = path.replace( re_root, '' );
-
-		if ( singleton ) {
-			m8.def( C, 'singleton', m8.describe( { value : ( singleton === true ? new C : C.create.apply( C, [].concat( singleton ) ) ) }, 'w' ) );
-			register( C, path, type );
-			C = C.singleton;
-		}
-		else if ( path ) register( C, path, type );
-
-		!( name && ns ) || m8.def( ns, name, m8.describe( { value : C }, 'w' ) );
-
-		return C;
+		return config.singleton
+			 ? make_singleton( Constructor, config )
+			 : Constructor;
 	}
 
-	function apply( proto, desc ) {
-		Object.reduce( desc, function( p, v, k ) {
-			switch( m8.nativeType( v ) ) {
-				case 'object' : m8.def( p, k, v, true ); break;
-				default       : p[k] = v;
-			}
-			return p;
-		}, proto );
-		return proto;
+	function create() { return singleton( this ) || this.apply( Object.create( this.prototype ), arguments ); }
+
+	function decorate( Constructor ) {
+		util.def( Constructor, 'create',      util.describe( create.bind(  Constructor ), 'r' ), true );
+		util.def( Constructor, __type__,      class_type, true );
+		return Constructor;
 	}
 
-	function create( C ) { return function create() { return singleton( C ) || C.apply( Object.create( C.prototype ), arguments ); }; }
-
-	function ctor( m, s, name, P ) {
-		var C    = wrap( m, s, name ),
-			Ctor = function() {
-				var ctx = this === U ? null : this, ctor = ctx ? ctx.constructor : null;
-				return singleton( ctor ) || C.apply( ( is( ctx, Ctor ) ) ? ctx : Object.create( P ), arguments );
-			};
-		return Ctor.mimic( m, name );
-	}
-
-	function extend( C, Sup ) {
-		if ( !( '__super' in C.prototype ) ) {
-			var p = C.prototype, sp = Sup.prototype;
-
-			Object.keys( sp ).forEach( function( k ) {
-				if ( k in reserved ) return;
-				switch ( m8.type( sp[k] ) ) {
-					case 'function' : ( p[k] = m8.nativeType( p[k] ) != 'function' ? wrap( sp[k], m8.noop, k ) : wrap( p[k], sp[k], k ) ); break;
-					default         : k in p || m8.def( p, k, Object.getOwnPropertyDescriptor( sp, k ), true );
-				}
-			} );
-
-			Object.keys( p ).forEach( function( k ) { // this allows the calling of "this.parent();" on a Class with no __super without throwing any errors
-				!( m8.nativeType( p[k] ) == 'function' && ( !( k in sp ) || p[k].valueOf() !== sp[k].valueOf() ) ) || ( p[k] = wrap( p[k], m8.noop, k ) );
-			} );
-
-			sp = m8.describe( { value : Object.create( Sup.prototype ) }, 'w' );
-			m8.def( C,           '__super', sp );
-			m8.def( C.prototype, '__super', sp );
+	function extract_prototype_descriptors( config ) { return Object.keys( config ).reduce( function( o, k ) {
+		if ( !util.got( default_prop_names, k ) ) {
+			o[k] = config[k];
+			delete config[k];
 		}
-		return C;
+		return o;
+	}, util.obj() ); }
+
+	function get_descriptor( o, k ) {
+		var descriptor = Object.getOwnPropertyDescriptor( o, k ) || ( typeof o[k] == 'function' ? util.describe( o[k], 'cw' ) : default_super_descriptor );
+		descriptor.writable = true;
+
+		return descriptor;
 	}
 
-	function getType( type, ctor ) { return ( !m8.empty( type ) ? type.replace( re_root, '' ).replace( re_dot, '_' ) : ctor.__name__ ).toLowerCase(); }
-
-	function is( o, C ) {
-		if ( o && C ) {
-			if ( o instanceof C ) return true;
-			if ( !( o = o.constructor ) ) return false;
-			do { if ( o === C ) return true; }
-			while ( o.__super && ( o = o.__super.constructor ) );
+	function is( instance, Class ) {
+		switch ( typeof Class ) {
+			case 'function' : return instance instanceof Class;
+			case 'string'   : return ( Class = getClass( Class ) ) ? ( instance instanceof Class ) : false;
 		}
 		return false;
 	}
 
-	function register( C, path, type ) {
-		var err, err_msg = path + ERR_MSG;
+	function make_class( config ) {
+		function Class_constructor() {
+			return this instanceof Class_constructor
+				 ? singleton( this.constructor )
+				|| Constructor.apply( this, arguments )
+				 : create.apply( Class_constructor, arguments );
+		}
 
-		!path || !( path in reg_path ) || ( err = true, console.log( err_msg + 'Class' ) );
-		!type || !( type in reg_type ) || ( err = true, console.log( err_msg + 'Type'  ) );
+		var constructor                         = config.constructor,
+			super_descriptor                    = get_descriptor( config.extend.prototype, 'constructor' ),
+			Constructor                         = make_method( constructor, super_descriptor );
+		Class_constructor.prototype             = make_prototype( config );
+		Class_constructor.prototype.constructor = Class_constructor;
 
-		if ( err ) new Error( 'id8.Class overwrite error.' );
+		util.def( Class_constructor, __super__, super_descriptor, true );
 
-		reg_path[path] = reg_type[type] = C;
+		if ( constructor[__name__] != 'anonymous' )
+			util.def( Class_constructor, __classname__, util.describe( constructor[__name__], 'w' ) );
+
+		return decorate( Class_constructor.mimic( constructor ) );
 	}
 
-	function singleton( C ) { return !C ? null : C.singleton || null; }
+	function make_configuration( setup ) {
+		var config = Object.keys( setup || util.obj()  ).reduce( function( o, k ) {
+			o[k] = setup[k];
+			return o;
+		}, util.obj() );
 
-	function type( c ) {
-		var ctor = c.constructor, k;
-		for ( k in reg_path ) if ( reg_path[k] === ctor ) return k;
-		return ctor.__name__ != 'anonymous' ? ctor.__name__ : 'Anonymous';
+		if ( typeof config.extend == 'string' )
+			config.extend = registered_path[config.extend] || registered_type[config.extend];
+		if ( typeof config.extend != 'function' )
+			config.extend = Object;
+		if ( typeof config.constructor != 'function' || config.constructor === Object )
+			config.constructor = config.extend.valueOf(); // performance: make sure we have original, not Class_constructor
+		if ( typeof config.type != 'string' && config.constructor !== Object && config.constructor.__name__ != 'anonymous' )
+			config.type = String( config.constructor.__name__ ).toLowerCase();
+
+		return config;
 	}
 
-	function wrap( m, s, name ) {
-		return function() {
-			var o, p = Object.getOwnPropertyDescriptor( this, 'parent' ) || desc_noop;
-			p.writable = true;
-			m8.def( this, 'parent', ( s ? m8.describe( s, 'cw' ) : desc_noop ), true );
-			o = m.apply( this, arguments );
-			m8.def( this, 'parent', p, true );
-			return this.chain !== false && o === U ? this : o;
-		}.mimic( m, name );
+	function make_method( method, super_descriptor, name ) {
+		super_descriptor = typeof super_descriptor != 'object'
+						|| method.valueOf() === super_descriptor.value.valueOf()
+						 ? default_super_descriptor
+						 : super_descriptor
+						|| default_super_descriptor;
+
+		return function Class_instance_method() {
+			var a = arguments, descriptor = get_descriptor( this, 'parent' ), return_value, u;
+
+			util.def( this, 'parent', ( super_descriptor || default_super_descriptor ), true );
+			return_value = method.apply( this, ( util.tostr( a[0] ) === '[object Arguments]' ? a[0] : a ) );
+			util.def( this, 'parent', descriptor, true );
+
+			return this.chain !== false && return_value === u ? this : return_value;
+		}.mimic( method, name );
 	}
 
-	var ERR_MSG   = ' already exists. Cannot override existing ',
-		defaults  = ( 'constructor extend mixin module singleton type' ).split( ' ' ),
-		desc_noop = m8.describe( m8.noop, 'cw' ),
-		dumb      = m8.obj(), re_dot   = /\./g,    re_root  = /^\u005E/,
-		reg_path  = m8.obj(), reg_type = m8.obj(), reserved = m8.obj(); // <- Object.create( null ); resolves issue in safari with using {}
+	function make_prototype( config ) {
+		var descriptor  = extract_prototype_descriptors( config ),
+			super_class = config.extend,
+			processed   = util.obj(),
+			prototype   = Object.create( super_class.prototype );
 
-	reserved.constructor = reserved.parent = reserved.__super = reserved.__type__ = true;
+		Object.keys( descriptor ).forEach( function( k ) {
+			var description = descriptor[k];
 
-	m8.defs( id8, { Class : Class, is : is, type : type }, 'w' );
+			switch ( util.nativeType( description ) ) {
+				case 'object'   : break;
+				case 'function' : description = util.describe( make_method( description, get_descriptor( prototype, k ), k ), 'cw' ); break;
+				default         : description = util.describe( description, 'ew' );
+			}
+
+			processed[k] = true;
+
+			util.def( prototype, k, description, true );
+		} );
+
+// this allows you to call "this.parent();" on a Class that has no Super Class, without throwing any errors...
+		Object.getOwnPropertyNames( prototype ).forEach( function( k ) {
+			if ( k in processed || typeof prototype[k] != 'function' ) return; // skip already processed properties
+			util.def( prototype, k, util.describe( make_method( prototype[k], default_super_descriptor ), 'cw' ), true );
+		} );
+
+		util.def( prototype, __type__, util.describe( config.type, 'w' ), true );
+		util.def( prototype, 'parent',   default_super_descriptor,        true );
+
+		return prototype;
+	}
+
+	function make_singleton( Constructor, config ) {
+		var instance = config.singleton === true
+					 ? new Constructor
+					 : Constructor.create.apply( null, [].concat( config.singleton ) );
+
+		util.def( Constructor, __singleton__, util.describe( { value : instance }, 'r' ) );
+
+		return instance;
+	}
+
+	function match_type( Class, type ) {
+		return Class[__classname__] === type || Class.prototype[__type__] === type;
+	}
+
+	function singleton( Constructor ) { return !Constructor ? null : Constructor[__singleton__] || null; }
+
+	function to_obj( o, k ) {
+		o[k] = true;
+		return o;
+	}
+
+	function type( instance ) {
+		var constructor = instance.constructor,
+			type        = constructor[__classname__] || constructor[__name__];
+		return type === 'Class_constructor' ? 'Anonymous' : type;
+	}
+
+	var class_type               =  util.describe( 'class', 'r' ),
+		default_prop_names       = 'constructor extend mixin singleton type'.split( ' ' ).reduce( to_obj, util.obj() ),
+		default_super_descriptor =  util.describe( util.noop, 'cw' );
+
+	util.defs( __lib__, { Class : Class, is : is, type : type }, 'r' );
 }();

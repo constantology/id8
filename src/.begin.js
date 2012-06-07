@@ -1,2 +1,2 @@
-!function( m8 ) {
+;!function( util, Name ) {
 	"use strict";
