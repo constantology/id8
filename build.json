@@ -5,6 +5,6 @@
 	"out"       : { "dir" : "./", "file" : "id8", "min" : "id8.min" },
 	"src" : {
 		"dir"   : "./src",
-		"files" : [".begin", "id8", "Class", "id8.x", "id8.expose", "Callback", "Hash", "Observer", ".end"]
+		"files" : [".begin", "lib", "vars", "expose", "lib.define", "Class", "Callback", "Hash", "Observer", "nativex", ".end"]
 	}
 }

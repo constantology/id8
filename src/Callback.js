@@ -1,4 +1,4 @@
-__lib__.define( NS( 'Callback' ), function() {
+__lib__.define( namespace( 'Callback' ), function() {
 	function buffer() {
 		if ( bid in this ) return this;
 		this[bid] = setTimeout( buffer_stop.bind( this ), this.buffer );

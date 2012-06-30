@@ -1,8 +1,8 @@
-__lib__.define( NS( 'Observer' ), function() {
+__lib__.define( namespace( 'Observer' ), function() {
 	function addObservers( observers ) {
 		observers = util.copy( util.obj(), observers );
 		var ctx = observers.ctx, k, l, o, opt = observers.options, s;
-		Object.remove( observers, 'ctx', 'options' );
+		util.remove( observers, 'ctx', 'options' );
 
 		for ( k in observers ) {
 			l = observers[k];
@@ -26,13 +26,14 @@ __lib__.define( NS( 'Observer' ), function() {
 			ctx  = cb.ctx || this.ctx,
 			fire = cb.fire  || cb.fn;
 
-		if ( !util.nativeType( fire ) == 'function' ) return true;
+		if ( !is_fun( fire ) ) return true;
 
-		if ( !!Object.key( this.ctx, cb.fn ) )                     // if the original callback function is a method on this Observer
-			args[0] !== this.ctx || args.shift();                    // then if the first argument is the Observer Object.remove it, as it's an internal event listener
-		else if ( args[0] !== this.ctx ) args.unshift( this.ctx ); // otherwise, if the Observer is not the first argument, then add it, so the callback knows what Observer fired it
+		if ( !!Object.key( this.ctx, cb.fn ) )        // if the original callback function is a method on this Observer
+			args[0] !== this.ctx || args.shift();     // then if the first argument is the Observer util.remove it, as it's
+		else if ( args[0] !== this.ctx )              // an internal event listener. otherwise, if the Observer is not the
+			args.unshift( this.ctx );                 // first argument, then add it, so the callback knows what Observer fired it
 
-		return ( fire.apply( ctx, args ) !== false );                  // if a callback explicitly returns false, then we want to stop broadcasting
+		return ( fire.apply( ctx, args ) !== false ); // if a callback explicitly returns false, then we want to stop broadcasting
 	}
 
 	function createRelayCallback( ctxr, ctx, evt ) {
@@ -65,7 +66,7 @@ __lib__.define( NS( 'Observer' ), function() {
 
 	function getObserver( r, v, k ) {
 		var m;
-		return ( k === this || ( util.nativeType( m = this.match( k ) ) == 'array' && m[0] === this ) ) ? r.concat( v ) : r;
+		return ( k === this || ( Array.isArray( m = this.match( k ) ) && m[0] === this ) ) ? r.concat( v ) : r;
 	}
 	function getObservers( o, e )   { return o.listeners.aggregate( [], getObserver, e ); }
 
@@ -81,15 +82,15 @@ __lib__.define( NS( 'Observer' ), function() {
 
 	function wildCardEsc( e ) { return e.replace( re_wc, '.*' ); }
 
-	var U, listener_id = 0, re_wc = /\*/g;
+	var listener_id = 0, re_wc = /\*/g;
 
 	return {
 		constructor    : function Observer( observers ) {
 			this.broadcasting       = false; this.destroyed = false;
 			this.observer_suspended = false; this.listeners = __lib__( 'Hash' );
 
-			util.nativeType( observers )      != 'object' || this.observe( observers );
-			util.nativeType( this.observers ) != 'object' || this.observe( this.observers ), delete this.observers;
+			!is_obj( observers )      || this.observe( observers );
+			!is_obj( this.observers ) || this.observe( this.observers ), delete this.observers;
 		},
 		module         : __lib__,
 
@@ -110,11 +111,11 @@ __lib__.define( NS( 'Observer' ), function() {
 			this.broadcasting = false;
 		},
 		buffer         : function( ms, evt, fn, ctx, o ) {
-			util.nativeType( o ) == 'object' || ( o = util.obj() ); o.buffer = Number( ms );
+			is_obj( o ) || ( o = util.obj() ); o.buffer = Number( ms );
 			this.observe( evt, fn, ctx, o );
 		},
 		delay          : function( ms, evt, fn, ctx, o ) {
-			util.nativeType( o ) == 'object' || ( o = util.obj() ); o.delay = Number( ms );
+			is_obj( o ) || ( o = util.obj() ); o.delay = Number( ms );
 			this.observe( evt, fn, ctx, o );
 		},
 		destroy        : function() {
@@ -147,13 +148,13 @@ __lib__.define( NS( 'Observer' ), function() {
 		observe        : function( event, fn, ctx, o ) {
 			var cb, e = this.listeners, fnt, q;
 
-			if ( util.nativeType( event ) == 'object' ) return addObservers.call( this, event );
+			if ( is_obj( event ) ) return addObservers.call( this, event );
 			switch ( ( fnt = util.type( fn ) ) ) {
 				case  'array' :
 					cb = util.obj(); cb[event] = { fn : fn, options : o, ctx : ctx };
 					return addObservers.call( this, cb );
 				case  'object' : case 'nullobject' : case ( Name + '-callback' ) : if ( 'handleEvent' in fn ) {
-					!( util.nativeType( ctx ) == 'object' && o === U ) || ( o = ctx );
+					!( is_obj( ctx ) && o === U ) || ( o = ctx );
 					ctx = fn; fn = handleEvent( fn );
 				} break;
 				case 'string'  : !ctx || ( fn = ctx[fn] ); break;
@@ -178,7 +179,7 @@ __lib__.define( NS( 'Observer' ), function() {
 			q.push( cb );
 		},
 		once           : function( evt, fn, ctx, o ) {
-			util.nativeType( o ) == 'object' || ( o = util.obj() );
+			is_obj( o ) || ( o = util.obj() );
 			o.single = true;
 			this.observe( evt, fn, ctx, o );
 		},

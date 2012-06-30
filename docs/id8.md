@@ -114,35 +114,3 @@ Creates an instance of id8.Callback and returns it's `fire` method. The id8.Call
    foo_callback.cb.fire === foo_callback // returns => true
 
 ```
-
-## Object.key( object:Object, value:Mixed ):String
-Returns the `object`'s property `key` for the passed `value` if `value` is a property of `object`. If not `null` is returned.
-
-**NOTE:** `value` is determined based on the `===` operator.
-
-#### Example:
-
-```javascript
-
-   var foo = { one : 1, two : 2, three : 3 };
-
-   Object.key( foo, 2 ); // returns => "two"
-
-   Object.key( foo, 4 ); // returns => null
-
-```
-
-## Object.remove( object:Object, property1:String|String[][, property2:String, ..., propertyN:String] ):Object
-Removes each `key` from the passed `object` and returns `object`.
-
-#### Example:
-
-```javascript
-
-   var foo = { one : 1, two : 2, three : 3 };
-
-   Object.remove( foo, 'one', 'three' );   // returns => { two : 2 }
-
-   Object.remove( foo, ['one', 'three'] ); // same as above
-
-```

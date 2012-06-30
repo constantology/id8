@@ -1,10 +1,10 @@
-__lib__.define( NS( 'Hash' ), function() {
+__lib__.define( namespace( 'Hash' ), function() {
 	var ID = '__hashid__', cache = [];
 
 	return {
 		constructor : function Hash( o ) {
 			util.def( this, ID, util.describe( cache.push( util.obj() ) - 1, 'w' ) );
-			util.nativeType( o ) != 'object' || this.set( o );
+			!is_obj( o ) || this.set( o );
 		},
 		module      : __lib__,
 
