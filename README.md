@@ -41,15 +41,6 @@ While **id8** has been tested, the testing framework I've written and used is ve
 
 Also I'm currently between virtual machine software – and operating system licenses – so I have only tested on mac osx lion and snow leopard: nodejs – >= v0.6.13 – as well as current – and beta/ nightly – versions of Chrome, Safari/ Webkit and FireFox.
 
-## File sizes
-
-<table border="0" cellpadding="0" cellspacing="0" width="100%">
-	<tbody>
-		<tr><td style="width : 80px ;">id8.js</td><td style="width : 48px ;">4.8kb</td><td>deflate</td>
-		<tr><td>id8.min.js</td><td>3.7kb</td><td>uglified + deflate</td>
-	</tbody>
-</table>
-
 ## License
 
 (The MIT License)
