@@ -36,11 +36,6 @@ If you are using id8 within a commonjs module, you don't need to require m8 befo
 
 See [m8: Extending into the future](/constantology/m8) for more information on working with sandboxed modules.
 
-## WARNING!!!
-While **id8** has been tested, the testing framework I've written and used is very much a work in progress.
-
-Also I'm currently between virtual machine software – and operating system licenses – so I have only tested on mac osx lion and snow leopard: nodejs – >= v0.6.13 – as well as current – and beta/ nightly – versions of Chrome, Safari/ Webkit and FireFox.
-
 ## License
 
 (The MIT License)
