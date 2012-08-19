@@ -1,5 +1,5 @@
 
-;!function( util, Name ) {
+;!function( util, Name, PACKAGE  ) {
 	"use strict";
 
 	function __lib__( name_or_type ) {
@@ -607,7 +607,9 @@ __lib__.define( namespace( 'Observer' ), function() {
 		}, 'w' );
 	} );
 
-	util.defs( ( __lib__ = util.expose( __lib__, Name, util.ENV == 'commonjs' ? module : util.global ) ), {
+	util.iter( PACKAGE ) || ( PACKAGE = util.ENV == 'commonjs' ? module : util.global );
+
+	util.defs( ( __lib__ = util.expose( __lib__, Name, PACKAGE ) ), {
 		get      : get,  is       : is,
 		type     : type, register : register
 	}, 'w', true );

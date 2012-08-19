@@ -1,4 +1,6 @@
-	util.defs( ( __lib__ = util.expose( __lib__, Name, util.ENV == 'commonjs' ? module : util.global ) ), {
+	util.iter( PACKAGE ) || ( PACKAGE = util.ENV == 'commonjs' ? module : util.global );
+
+	util.defs( ( __lib__ = util.expose( __lib__, Name, PACKAGE ) ), {
 		get      : get,  is       : is,
 		type     : type, register : register
 	}, 'w', true );

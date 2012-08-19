@@ -1,2 +1,2 @@
-;!function( util, Name ) {
+;!function( util, Name, PACKAGE  ) {
 	"use strict";
