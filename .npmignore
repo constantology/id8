@@ -2,11 +2,6 @@
 .git*
 .idea
 
-node_modules
 npm-debug.log
 
-test
-src
-src/.*
-build*
-*.min.js
+test.bak/
