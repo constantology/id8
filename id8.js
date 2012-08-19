@@ -79,20 +79,6 @@
 		registered_path  = util.obj(),
 		registered_type  = util.obj();
 
-	util.defs( ( __lib__ = util.expose( __lib__, Name, util.ENV == 'commonjs' ? module : util.global ) ), {
-		get      : get,  is       : is,
-		type     : type, register : register
-	}, 'w', true );
-
-	util.expose( util, __lib__ );           // store a reference to m8 on id8
-
-	anon_list.Class_constructor     = true; // add these two method names to the anonymous function names list
-	anon_list.Class_instance_method = true; // this will give us more clarity when debugging
-
-// extend Function and Object natives with id8's extensions if not sandboxed
-// or sandboxed environment's natives with all m8 AND id8 extensions
-	util.x( Object, Array, Boolean, Function );
-
 util.def( __lib__, 'define', function() {
 // public methods
 	function define( class_path, descriptor ) {
@@ -109,8 +95,6 @@ util.def( __lib__, 'define', function() {
 		class_name = class_path.replace( re_invalid_chars, '' );
 		class_path = class_path.split( '.' );
 		class_config.type || ( class_config.type = class_name.toLowerCase().split( '.' ).join( '-' ) );
-
-//		make_processable( class_name );
 
 		Class      = __lib__.Class( class_config );
 		ClassName  = class_path.pop();
@@ -622,6 +606,20 @@ __lib__.define( namespace( 'Observer' ), function() {
 			return ( new __lib__.Callback( this, conf ) ).fire.mimic( this );
 		}, 'w' );
 	} );
+
+	util.defs( ( __lib__ = util.expose( __lib__, Name, util.ENV == 'commonjs' ? module : util.global ) ), {
+		get      : get,  is       : is,
+		type     : type, register : register
+	}, 'w', true );
+
+	util.expose( util, __lib__ );           // store a reference to m8 on id8
+
+	anon_list.Class_constructor     = true; // add these two method names to the anonymous function names list
+	anon_list.Class_instance_method = true; // this will give us more clarity when debugging
+
+// extend Function and Object natives with id8's extensions if not sandboxed
+// or sandboxed environment's natives with all m8 AND id8 extensions
+	util.x( Object, Array, Boolean, Function );
 
 // at this point we don't know if m8 is available or not, and as such do not know what environment we are in.
 // so, we check and do what is required.
