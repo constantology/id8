@@ -31,8 +31,10 @@ __lib__.define( namespace( 'Callback' ), function() {
 		chain       : true,
 		module      : __lib__,
 // properties
-		buffer      : null, count : 0,
-		delay       : null, times : 0,
+		buffer      : null,
+		count       : 0,
+		delay       : null,
+		times       : 0,
 // methods
 		disable     : function() {
 			this.disabled    = true;

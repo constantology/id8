@@ -16,8 +16,14 @@ __lib__.define( namespace( 'Hash' ), function() {
 			var H = this, o = cache[this[ID]]; ctx || ( ctx = H );
 			return Object.keys( o ).reduce( function( res, k, i ) { return fn.call( ctx, res, o[k], k, H, i ); }, val );
 		},
-		clear       : function() { cache[this[ID]] = util.obj(); },
+		clear       : function() {
+			delete cache[this[ID]];
+			cache[this[ID]] = util.obj();
+		},
 		clone       : function() { return new __lib__.Hash( this.valueOf() ); },
+		destroy     : function() {
+			delete cache[this[ID]];
+		},
 		each        : function( fn, ctx ) {
 			var H = this, o = cache[H[ID]]; ctx || ( ctx = H );
 			Object.keys( o ).forEach( function( k, i ) { fn.call( ctx, o[k], k, H, i ); }, H );

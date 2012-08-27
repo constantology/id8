@@ -10,12 +10,12 @@ __lib__.define( namespace( 'Observer' ), function() {
 			s = l.ctx     === U ? l.ctx     : ctx;
 
 			switch ( util.nativeType( l ) ) {
-				case 'function' : this.observe( k, l, ctx, opt );                                              break;
+				case 'function' : this.observe( k, l, ctx, opt );                                            break;
 				case 'object'   : switch( util.nativeType( l.fn ) ) {
 					case 'function' : case 'object' : this.observe( k, l.fn, s, o );                         break;
 					case 'array'    : l.fn.forEach( function( fn ) { this.observe( k, fn, s, o ); }, this ); break;
 				} break;
-				case 'array'    : l.forEach( function( fn ) { this.observe( k, fn, ctx, opt ); }, this );      break;
+				case 'array'    : l.forEach( function( fn ) { this.observe( k, fn, ctx, opt ); }, this );    break;
 			}
 		}
 		return this;
@@ -121,8 +121,10 @@ __lib__.define( namespace( 'Observer' ), function() {
 		destroy        : function() {
 			if ( this.destroyed ) return true;
 			if ( this.broadcast( 'before:destroy' ) === false ) return false;
-			this.destroyed = true;
-			this._destroy();
+			this.destroying = true;
+			this._destroy().onDestroy();
+			this.destroying = false;
+			this.destroyed  = true;
 			this.broadcast( 'destroy' );
 			this.observer_suspended = true;
 			delete this.listeners;
@@ -198,6 +200,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 		suspendEvents  : function() {  this.observer_suspended || ( this.observer_suspended = true,  this.broadcast( 'observer:suspended' ) ); },
 
 // internal methods
-		_destroy       : util.noop
+		_destroy       : util.noop,
+		onDestroy      : util.noop
 	};
 }() );

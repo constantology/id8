@@ -317,8 +317,10 @@ __lib__.define( namespace( 'Callback' ), function() {
 		chain       : true,
 		module      : __lib__,
 // properties
-		buffer      : null, count : 0,
-		delay       : null, times : 0,
+		buffer      : null,
+		count       : 0,
+		delay       : null,
+		times       : 0,
 // methods
 		disable     : function() {
 			this.disabled    = true;
@@ -371,8 +373,14 @@ __lib__.define( namespace( 'Hash' ), function() {
 			var H = this, o = cache[this[ID]]; ctx || ( ctx = H );
 			return Object.keys( o ).reduce( function( res, k, i ) { return fn.call( ctx, res, o[k], k, H, i ); }, val );
 		},
-		clear       : function() { cache[this[ID]] = util.obj(); },
+		clear       : function() {
+			delete cache[this[ID]];
+			cache[this[ID]] = util.obj();
+		},
 		clone       : function() { return new __lib__.Hash( this.valueOf() ); },
+		destroy     : function() {
+			delete cache[this[ID]];
+		},
 		each        : function( fn, ctx ) {
 			var H = this, o = cache[H[ID]]; ctx || ( ctx = H );
 			Object.keys( o ).forEach( function( k, i ) { fn.call( ctx, o[k], k, H, i ); }, H );
@@ -409,12 +417,12 @@ __lib__.define( namespace( 'Observer' ), function() {
 			s = l.ctx     === U ? l.ctx     : ctx;
 
 			switch ( util.nativeType( l ) ) {
-				case 'function' : this.observe( k, l, ctx, opt );                                              break;
+				case 'function' : this.observe( k, l, ctx, opt );                                            break;
 				case 'object'   : switch( util.nativeType( l.fn ) ) {
 					case 'function' : case 'object' : this.observe( k, l.fn, s, o );                         break;
 					case 'array'    : l.fn.forEach( function( fn ) { this.observe( k, fn, s, o ); }, this ); break;
 				} break;
-				case 'array'    : l.forEach( function( fn ) { this.observe( k, fn, ctx, opt ); }, this );      break;
+				case 'array'    : l.forEach( function( fn ) { this.observe( k, fn, ctx, opt ); }, this );    break;
 			}
 		}
 		return this;
@@ -520,8 +528,10 @@ __lib__.define( namespace( 'Observer' ), function() {
 		destroy        : function() {
 			if ( this.destroyed ) return true;
 			if ( this.broadcast( 'before:destroy' ) === false ) return false;
-			this.destroyed = true;
-			this._destroy();
+			this.destroying = true;
+			this._destroy().onDestroy();
+			this.destroying = false;
+			this.destroyed  = true;
 			this.broadcast( 'destroy' );
 			this.observer_suspended = true;
 			delete this.listeners;
@@ -597,7 +607,8 @@ __lib__.define( namespace( 'Observer' ), function() {
 		suspendEvents  : function() {  this.observer_suspended || ( this.observer_suspended = true,  this.broadcast( 'observer:suspended' ) ); },
 
 // internal methods
-		_destroy       : util.noop
+		_destroy       : util.noop,
+		onDestroy      : util.noop
 	};
 }() );
 
