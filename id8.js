@@ -292,7 +292,6 @@ __lib__.define( namespace( 'Callback' ), function() {
 	}
 	function buffer_stop() { clearTimeout( this[bid] ); delete this[bid]; }
 	function eventType( t ) { return t.indexOf( 'event' ) + 5 === t.length; }
-//	function handleEvent() { return this.fire.apply( this, arguments ); }
 
 	var bid = 'bufferId', tid = 'timeoutId';
 
@@ -406,7 +405,6 @@ __lib__.define( namespace( 'Hash' ), function() {
 	};
 }() );
 
-// todo: come up with a good way to remove the callback from the queue if single!!!
 __lib__.define( namespace( 'Observer' ), function() {
 	function broadcast( args, cb ) {
 		if ( !is_fun( cb.handleEvent ) ) return true;
@@ -485,46 +483,20 @@ __lib__.define( namespace( 'Observer' ), function() {
 
 	function handleEvent( cb ) {
 		return function handleEvent() {
-			return cb.handleEvent.apply( cb, arguments );
+			return is_fun( cb.handleEvent ) ? cb.handleEvent.apply( cb, arguments ) : U;
 		};
 	}
 
 	function observe( observer, listeners ) {
 		listeners = util.copy( util.obj(), listeners );
 
-		var ctx     = listeners.ctx || observer,
-			event, listener, l_ctx, l_fn, l_options, l_type,
-			options = util.got( listeners, 'options' ) ? createCallbackConfig( listeners.options ) : U;
+		if ( !listeners.ctx )
+			listeners.ctx = observer;
 
-		util.remove( listeners, 'ctx', 'options' );
+		if ( util.got( listeners, 'options' ) )
+			listeners.options = createCallbackConfig( listeners.options );
 
-//todo:		Object.reduce( listeners, observe_type, observer );
-		for ( event in listeners ) { if ( util.has( listeners, event ) ) {
-			listener = listeners[event];
-			l_ctx    = U; l_fn = U;
-			l_type   = util.type( listener );
-
-			switch ( l_type ) {
-				case type_callback :
-					l_fn      = listener;
-					break;
-
-				case 'function'    : case 'array'  : case 'string' :
-					l_ctx     = ctx;
-					l_fn      = listener;
-					break;
-
-				case 'nullobject'  : case 'object' :
-					l_ctx     = listener.ctx || ctx;
-					l_fn      = listener.fn;
-					l_options = util.got( listener, 'options' ) ? createCallbackConfig( listener.options ) : options;
-					break;
-			}
-
-			observer.observe( event, l_fn, l_ctx, l_options );
-		} }
-
-		return observer;
+		return Object.reduce( listeners, observe_type, observer );
 	}
 
 	function observe_multi( event, ctx, options ) {
@@ -533,11 +505,39 @@ __lib__.define( namespace( 'Observer' ), function() {
 		};
 	}
 
+	function observe_type( observer, listener, event, listeners, index ) {
+		if ( event == 'ctx' || event == 'options' )
+			return observer;
+
+		var ctx, fn, options, type= util.type( listener );
+
+		switch ( type ) {
+			case type_callback :
+				fn  = listener;
+				break;
+
+			case 'function'    : case 'array'  : case 'string' :
+				ctx = listeners.ctx;
+				fn  = listener;
+				break;
+
+			case 'nullobject'  : case 'object' :
+				ctx     = listener.ctx || listeners.ctx;
+				fn      = listener.fn;
+				options = util.got( listener, 'options' ) ? createCallbackConfig( listener.options ) : listeners.options;
+				break;
+		}
+
+		observer.observe( event, fn, ctx, options );
+
+		return observer;
+	}
+
 	function relay() { return this.broadcast.apply( this, arguments ); }
 
 	function wildCardEsc( evt ) { return String( evt ).toLowerCase().replace( re_wc, '.*' ); }
 
-	var /*listener_id = 0,*/ re_wc = /\*/g, type_callback = Name + '-callback';
+	var re_wc = /\*/g, type_callback = Name + '-callback';
 
 	return {
 		constructor    : function Observer( observers ) {
@@ -596,17 +596,6 @@ __lib__.define( namespace( 'Observer' ), function() {
 			var index = findIndex( this, queue, fn, ctx );
 
 			!~index || queue.splice( index, 1 );
-
-			/*switch ( util.type( fn ) ) {
-				case type_callback : o = { ctx : fn,          isCB : true }; break;
-				default            : o = { ctx : ctx || this, fn   : fn   };
-			}
-			o.event = event;
-			o = find( queue, o );
-			if ( o !== null ) {
-				i = queue.indexOf( o );
-				i < 0 || queue.splice( i, 1 );
-			}*/
 		},
 		observe        : function( event, fn, ctx, options ) {
 			if ( is_obj( event ) )
@@ -641,7 +630,6 @@ __lib__.define( namespace( 'Observer' ), function() {
 						fn = ctx[fn];
 					}      break;
 				}
-
 				queue.push( createCallback( fn, createCallbackConfig( options, ctx || this ) ) );
 			}
 		},
