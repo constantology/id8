@@ -11,7 +11,7 @@
 
 	function extract_default_properties( config, defaults ) {
 		return Object.keys( config ).reduce( function( o, k ) {
-			if ( !util.got( defaults, k ) ) {
+			if ( !util.has( defaults, k ) ) {
 				o[k] = config[k];
 				delete config[k];
 			}

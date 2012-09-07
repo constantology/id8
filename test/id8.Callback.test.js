@@ -1,6 +1,8 @@
-typeof m8     !== 'undefined' || ( m8     = require( 'm8' ) );
-typeof id8    !== 'undefined' || ( id8    = require( 'id8' ) );
-typeof expect !== 'undefined' || ( expect = require( 'expect.js' ) );
+typeof id8  !== 'undefined' || ( id8  = require( 'id8' ) );
+typeof chai !== 'undefined' || ( chai = require( 'chai' ) );
+
+m8     = id8.m8;
+expect = chai.expect;
 
 suite( 'id8.Callback', function() {
 	test( 'Function.prototype.callback', function( done ) {
@@ -13,12 +15,12 @@ suite( 'id8.Callback', function() {
 		expect( m8.type( cbfire.cb ) ).to.eql( 'id8-callback' );
 
 		m8.ENV == 'commonjs' // even though this is true – and every other claim is verified – when the investigation is run from the CMDLine, it fails, works in chrome though... :P
-		||  expect( cbfire.cb instanceof id8.Callback  ).to.be( true );
+		||  expect( cbfire.cb instanceof id8.Callback  ).to.be.true;
 
 		expect( id8.type( cb1 ) ).to.eql( 'id8.Callback' );
-		expect( cb1 instanceof id8.Callback  ).to.be( true );
+		expect( cb1 instanceof id8.Callback  ).to.be.true;
 		expect( id8.type( cb2 ) ).to.eql( 'id8.Callback' );
-		expect( cb2 instanceof id8.Callback  ).to.be( true );
+		expect( cb2 instanceof id8.Callback  ).to.be.true;
 
 		done();
 	} );
@@ -41,7 +43,7 @@ suite( 'id8.Callback', function() {
 							expect( 'buffering refuted' ).to.eql( 'buffering verified' );
 						expect( time ).to.be.within( 200, 350 );
 					}
-					else expect( 'buffering verified' ).to.be.ok();
+					else expect( 'buffering verified' ).to.be.ok;
 
 				ms = Date.now();
 				++i < 1 || cb.fire();
@@ -59,7 +61,7 @@ suite( 'id8.Callback', function() {
 		var ctx = { foo : 'bar' },
 			cb  = id8.Callback( function() {
 					var me = this;
-					expect( me ).to.be( ctx );
+					expect( me ).to.equal( ctx );
 					done();
 				}, { ctx : ctx } );
 
@@ -70,7 +72,7 @@ suite( 'id8.Callback', function() {
 		this.timeout(200);
 		var cb = id8.Callback( function() {
 					var time = Date.now() - ms;
-					expect( time ).to.be.greaterThan( 90 );
+					expect( time ).to.be.above( 90 );
 					done();
 				}, { delay : 100 } ),
 			ms = Date.now();
@@ -80,7 +82,7 @@ suite( 'id8.Callback', function() {
 
 	test( 'times', function( done ) {
 		var cb = id8.Callback( function() {
-					expect( ++i ).to.be.lessThan( 3 );
+					expect( ++i ).to.be.below( 3 );
 				}, { times : 3 } ),
 			i  = -1;
 
@@ -118,10 +120,10 @@ suite( 'id8.Callback', function() {
 
 	test( 'reset', function( done ) {
 		var cb = id8.Callback( function() {
-				if ( i < 3 ) expect( ++i ).to.be.lessThan( 3 );
+				if ( i < 3 ) expect( ++i ).to.be.below( 3 );
 				else if ( i >= 6 ) {
 					if ( i > 9 ) expect( 'resetting refuted 1' ).to.eql( 'resetting verified' );
-					expect( ++i ).greaterThan( 6 );
+					expect( ++i ).to.be.above( 6 );
 				}
 				else expect( 'resetting refuted 2.' + i ).to.eql( 'resetting verified' ); // todo change all these to be expected: fact passed, returned: fact failed
 			}, { times : 3 } ),

@@ -6,7 +6,6 @@ __lib__.define( namespace( 'Callback' ), function() {
 	}
 	function buffer_stop() { clearTimeout( this[bid] ); delete this[bid]; }
 	function eventType( t ) { return t.indexOf( 'event' ) + 5 === t.length; }
-	function handleEvent() { return this.fire.apply( this, arguments ); }
 
 	var bid = 'bufferId', tid = 'timeoutId';
 
@@ -17,9 +16,10 @@ __lib__.define( namespace( 'Callback' ), function() {
 			var desc = util.describe( null, 'w' ),
 				fire = ( util.type( this.buffer ) == 'number' ? buffer : this.exec ).bind( this );
 
-			desc.value = fn;   util.def( this, 'fn',   desc );
-			desc.value = this; util.def( fire, 'cb',   desc );
-			desc.value = fire; util.def( this, 'fire', desc );
+			desc.value = fn;   util.def( this, 'fn',           desc );
+			desc.value = this; util.def( fire, 'cb',           desc );
+			desc.value = fire; util.def( this, 'fire',         desc );
+							   util.def( this, 'handleEvent_', desc );
 
 			this.args || ( this.args = [] );
 			this.ctx  || ( this.ctx  = this );
@@ -42,7 +42,7 @@ __lib__.define( namespace( 'Callback' ), function() {
 		},
 		enable      : function() {
 			this.disabled    = false;
-			this.handleEvent = handleEvent;
+			this.handleEvent = this.handleEvent_;
 		},
 		exec        : function() {
 			if ( this.disabled ) return;

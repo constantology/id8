@@ -1,6 +1,8 @@
-typeof m8     !== 'undefined' || ( m8     = require( 'm8' ) );
-typeof id8    !== 'undefined' || ( id8    = require( 'id8' ) );
-typeof expect !== 'undefined' || ( expect = require( 'expect.js' ) );
+typeof id8  !== 'undefined' || ( id8  = require( 'id8' ) );
+typeof chai !== 'undefined' || ( chai = require( 'chai' ) );
+
+m8     = id8.m8;
+expect = chai.expect;
 
 suite( 'id8.Class', function() {
 
@@ -54,30 +56,30 @@ suite( 'id8.Class', function() {
 	} );
 
 	test( '<static> id8.is', function( done ) {
-		expect( id8.is( instance_01, Class_01 ) ).to.be( true );
-		expect( id8.is( instance_01, Object ) ).to.be( true );
+		expect( id8.is( instance_01, Class_01 ) ).to.be.true;
+		expect( id8.is( instance_01, Object ) ).to.be.true;
 
-		expect( id8.is( instance_02, Class_02 ) ).to.be( true );
-		expect( id8.is( instance_02, Class_01 ) ).to.be( true );
-		expect( id8.is( instance_02, Object ) ).to.be( true );
+		expect( id8.is( instance_02, Class_02 ) ).to.be.true;
+		expect( id8.is( instance_02, Class_01 ) ).to.be.true;
+		expect( id8.is( instance_02, Object ) ).to.be.true;
 
-		expect( id8.is( instance_03, Class_03 ) ).to.be( true );
-		expect( id8.is( instance_03, Class_02 ) ).to.be( true );
-		expect( id8.is( instance_03, Class_01 ) ).to.be( true );
-		expect( id8.is( instance_03, Object ) ).to.be( true );
+		expect( id8.is( instance_03, Class_03 ) ).to.be.true;
+		expect( id8.is( instance_03, Class_02 ) ).to.be.true;
+		expect( id8.is( instance_03, Class_01 ) ).to.be.true;
+		expect( id8.is( instance_03, Object ) ).to.be.true;
 
-		expect( id8.is( instance_04, Class_04 ) ).to.be( true );
-		expect( id8.is( instance_04, Class_03 ) ).to.be( true );
-		expect( id8.is( instance_04, Class_02 ) ).to.be( true );
-		expect( id8.is( instance_04, Class_01 ) ).to.be( true );
-		expect( id8.is( instance_04, Object ) ).to.be( true );
+		expect( id8.is( instance_04, Class_04 ) ).to.be.true;
+		expect( id8.is( instance_04, Class_03 ) ).to.be.true;
+		expect( id8.is( instance_04, Class_02 ) ).to.be.true;
+		expect( id8.is( instance_04, Class_01 ) ).to.be.true;
+		expect( id8.is( instance_04, Object ) ).to.be.true;
 
-		expect( id8.is( path.to.Singleton_01, path.to.Singleton_01.constructor ) ).to.be( true );
-		expect( id8.is( path.to.Singleton_01, Class_04 ) ).to.be( true );
-		expect( id8.is( path.to.Singleton_01, Class_03 ) ).to.be( true );
-		expect( id8.is( path.to.Singleton_01, Class_02 ) ).to.be( true );
-		expect( id8.is( path.to.Singleton_01, Class_01 ) ).to.be( true );
-		expect( id8.is( path.to.Singleton_01, Object ) ).to.be( true );
+		expect( id8.is( path.to.Singleton_01, path.to.Singleton_01.constructor ) ).to.be.true;
+		expect( id8.is( path.to.Singleton_01, Class_04 ) ).to.be.true;
+		expect( id8.is( path.to.Singleton_01, Class_03 ) ).to.be.true;
+		expect( id8.is( path.to.Singleton_01, Class_02 ) ).to.be.true;
+		expect( id8.is( path.to.Singleton_01, Class_01 ) ).to.be.true;
+		expect( id8.is( path.to.Singleton_01, Object ) ).to.be.true;
 
 		done();
 	} );
@@ -94,38 +96,38 @@ suite( 'id8.Class', function() {
 
 	test( 'instantiating with the new operator', function( done ) {
 		var f, b, z, w;
-		expect( ( f = new Class_01( 'hello world!' ) ) instanceof Class_01 ).to.be( true );
+		expect( ( f = new Class_01( 'hello world!' ) ) instanceof Class_01 ).to.be.true;
 		expect( f.greeting ).to.eql( 'hello world!' );
-		expect( ( b = new Class_02( 'hello world!' ) ) instanceof Class_02 ).to.be( true );
-		expect( b instanceof Class_01 ).to.be( true );
+		expect( ( b = new Class_02( 'hello world!' ) ) instanceof Class_02 ).to.be.true;
+		expect( b instanceof Class_01 ).to.be.true;
 		expect( b.greeting ).to.eql( 'class_02: hello world!' );
-		expect( ( z = new Class_03( 'hello world!' ) ) instanceof Class_03 ).to.be( true );
-		expect( z instanceof Class_02 ).to.be( true );
-		expect( z instanceof Class_01 ).to.be( true );
+		expect( ( z = new Class_03( 'hello world!' ) ) instanceof Class_03 ).to.be.true;
+		expect( z instanceof Class_02 ).to.be.true;
+		expect( z instanceof Class_01 ).to.be.true;
 		expect( z.greeting ).to.eql( 'class_02: class_03: hello world!' );
-		expect( ( w = new Class_04( 'hello world!' ) ) instanceof Class_04 ).to.be( true );
-		expect( w instanceof Class_03 ).to.be( true );
-		expect( w instanceof Class_02 ).to.be( true );
-		expect( w instanceof Class_01 ).to.be( true );
+		expect( ( w = new Class_04( 'hello world!' ) ) instanceof Class_04 ).to.be.true;
+		expect( w instanceof Class_03 ).to.be.true;
+		expect( w instanceof Class_02 ).to.be.true;
+		expect( w instanceof Class_01 ).to.be.true;
 		expect( w.greeting ).to.eql( 'class_02: class_03: class_04: hello world!' );
-		expect( path.to.Singleton_01 instanceof path.to.Singleton_01.constructor ).to.be( true );
-		expect( path.to.Singleton_01 instanceof Class_04 ).to.be( true );
-		expect( path.to.Singleton_01 instanceof Class_03 ).to.be( true );
-		expect( path.to.Singleton_01 instanceof Class_02 ).to.be( true );
-		expect( path.to.Singleton_01 instanceof Class_01 ).to.be( true );
+		expect( path.to.Singleton_01 instanceof path.to.Singleton_01.constructor ).to.be.true;
+		expect( path.to.Singleton_01 instanceof Class_04 ).to.be.true;
+		expect( path.to.Singleton_01 instanceof Class_03 ).to.be.true;
+		expect( path.to.Singleton_01 instanceof Class_02 ).to.be.true;
+		expect( path.to.Singleton_01 instanceof Class_01 ).to.be.true;
 
 		done();
 	} );
 
 	test( 'instantiating without the new operator', function( done ) {
 		var f, b, z, w;
-		expect( ( f = Class_01( 'hello world!' ) ) instanceof Class_01 ).to.be( true );
+		expect( ( f = Class_01( 'hello world!' ) ) instanceof Class_01 ).to.be.true;
 		expect( f.greeting ).to.eql( 'hello world!' );
-		expect( ( b = Class_02( 'hello world!' ) ) instanceof Class_02 ).to.be( true );
+		expect( ( b = Class_02( 'hello world!' ) ) instanceof Class_02 ).to.be.true;
 		expect( b.greeting ).to.eql( 'class_02: hello world!' );
-		expect( ( z = Class_03( 'hello world!' ) ) instanceof Class_03 ).to.be( true );
+		expect( ( z = Class_03( 'hello world!' ) ) instanceof Class_03 ).to.be.true;
 		expect( z.greeting ).to.eql( 'class_02: class_03: hello world!' );
-		expect( ( w = Class_04( 'hello world!' ) ) instanceof Class_04 ).to.be( true );
+		expect( ( w = Class_04( 'hello world!' ) ) instanceof Class_04 ).to.be.true;
 		expect( w.greeting ).to.eql( 'class_02: class_03: class_04: hello world!' );
 
 		done();
@@ -133,13 +135,13 @@ suite( 'id8.Class', function() {
 
 	test( 'instantiating a Class with the Class\' create factory', function( done ) {
 		var f, b, z, w;
-		expect( ( f = Class_01.create( 'hello world!' ) ) instanceof Class_01 ).to.be( true );
+		expect( ( f = Class_01.create( 'hello world!' ) ) instanceof Class_01 ).to.be.true;
 		expect( f.greeting ).to.eql( 'hello world!' );
-		expect( ( b = Class_02.create( 'hello world!' ) ) instanceof Class_02 ).to.be( true );
+		expect( ( b = Class_02.create( 'hello world!' ) ) instanceof Class_02 ).to.be.true;
 		expect( b.greeting ).to.eql( 'class_02: hello world!' );
-		expect( ( z = Class_03.create( 'hello world!' ) ) instanceof Class_03 ).to.be( true );
+		expect( ( z = Class_03.create( 'hello world!' ) ) instanceof Class_03 ).to.be.true;
 		expect( z.greeting ).to.eql( 'class_02: class_03: hello world!' );
-		expect( ( w = Class_04.create( 'hello world!' ) ) instanceof Class_04 ).to.be( true );
+		expect( ( w = Class_04.create( 'hello world!' ) ) instanceof Class_04 ).to.be.true;
 		expect( w.greeting ).to.eql( 'class_02: class_03: class_04: hello world!' );
 
 		done();
@@ -147,11 +149,11 @@ suite( 'id8.Class', function() {
 
 	test( 'instantiating a Class with the id8 factory', function( done ) {
 		var f, b, z, w;
-		expect( ( b = id8( 'path-to-class_02', 'hello world!' ) ) instanceof Class_02 ).to.be( true );
+		expect( ( b = id8( 'path-to-class_02', 'hello world!' ) ) instanceof Class_02 ).to.be.true;
 		expect( b.greeting ).to.eql( 'class_02: hello world!' );
-		expect( ( z = id8( 'class_03', 'hello world!' ) ) instanceof Class_03 ).to.be( true );
+		expect( ( z = id8( 'class_03', 'hello world!' ) ) instanceof Class_03 ).to.be.true;
 		expect( z.greeting ).to.eql( 'class_02: class_03: hello world!' );
-		expect( ( w = id8( Class_04, 'hello world!' ) ) instanceof Class_04 ).to.be( true );
+		expect( ( w = id8( Class_04, 'hello world!' ) ) instanceof Class_04 ).to.be.true;
 		expect( w.greeting ).to.eql( 'class_02: class_03: class_04: hello world!' );
 
 		done();
@@ -192,9 +194,9 @@ suite( 'id8.Class', function() {
 	} );
 
 	test( 'singletons', function( done ) {
-		expect( new path.to.Singleton_01.constructor() ).to.be( path.to.Singleton_01 );
-		expect( path.to.Singleton_01.constructor() ).to.be( path.to.Singleton_01 );
-		expect( path.to.Singleton_01.constructor.create() ).to.be( path.to.Singleton_01 );
+		expect( new path.to.Singleton_01.constructor() ).to.equal( path.to.Singleton_01 );
+		expect( path.to.Singleton_01.constructor() ).to.equal( path.to.Singleton_01 );
+		expect( path.to.Singleton_01.constructor.create() ).to.equal( path.to.Singleton_01 );
 
 		done();
 	} );

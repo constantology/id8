@@ -1,39 +1,40 @@
 __lib__.define( namespace( 'Observer' ), function() {
-	function addObservers( observers ) {
-		observers = util.copy( util.obj(), observers );
-		var ctx = observers.ctx, k, l, o, opt = observers.options, s;
-		util.remove( observers, 'ctx', 'options' );
+	function broadcast( args, cb ) {
+		if ( !is_fun( cb.handleEvent ) ) return true;
 
-		for ( k in observers ) {
-			l = observers[k];
-			o = l.options === U ? l.options : opt;
-			s = l.ctx     === U ? l.ctx     : ctx;
+		args = args.slice( 0 );
 
-			switch ( util.nativeType( l ) ) {
-				case 'function' : this.observe( k, l, ctx, opt );                                            break;
-				case 'object'   : switch( util.nativeType( l.fn ) ) {
-					case 'function' : case 'object' : this.observe( k, l.fn, s, o );                         break;
-					case 'array'    : l.fn.forEach( function( fn ) { this.observe( k, fn, s, o ); }, this ); break;
-				} break;
-				case 'array'    : l.forEach( function( fn ) { this.observe( k, fn, ctx, opt ); }, this );    break;
-			}
-		}
-		return this;
+		if ( !!Object.key( this, cb.fn ) )                         // if the original callback function is a method on this Observer
+			args[0] !== this || args.shift();                      // then if the first argument is the Observer remove it, as it's
+		else if ( args[0] !== this )                               // an internal event listener. otherwise, if the Observer is not the
+			args.unshift( this );                                  // first argument, then add it, so the callback has reference to
+																   // which Observer fired the event
+		return ( cb.handleEvent.apply( cb.ctx, args ) !== false ); // if a callback explicitly returns false, then we want to stop broadcasting
 	}
 
-	function broadcast( cb ) {
-		var args = this.args.concat( cb.options.args ),
-			ctx  = cb.ctx || this.ctx,
-			fire = cb.fire  || cb.fn;
+	function createCallback( fn, config ) {
+		return __lib__( 'callback', fn, config );
+	}
 
-		if ( !is_fun( fire ) ) return true;
+	function createCallbackConfig( config, ctx ) {
+		switch( util.nativeType( config ) ) {
+			case 'boolean' : config = { times : !!config ? 1 : 0 };     break;
+			case 'number'  : config = { delay :   config };             break;
+			case 'object'  : config = util.merge( util.obj(), config ); break;
+			default        : config = util.obj();
+		}
 
-		if ( !!Object.key( this.ctx, cb.fn ) )        // if the original callback function is a method on this Observer
-			args[0] !== this.ctx || args.shift();     // then if the first argument is the Observer util.remove it, as it's
-		else if ( args[0] !== this.ctx )              // an internal event listener. otherwise, if the Observer is not the
-			args.unshift( this.ctx );                 // first argument, then add it, so the callback knows what Observer fired it
+		if ( util.got( config, 'single' ) ) {
+			config.times = !!config.single ? 1 : 0;
+			delete config.single;
+		}
 
-		return ( fire.apply( ctx, args ) !== false ); // if a callback explicitly returns false, then we want to stop broadcasting
+		if ( !Array.isArray( config.args ) )
+			config.args = [];
+
+		config.ctx = ctx;
+
+		return config;
 	}
 
 	function createRelayCallback( ctxr, ctx, evt ) {
@@ -45,44 +46,89 @@ __lib__.define( namespace( 'Observer' ), function() {
 		};
 	}
 
-// the reason we do this instead of passing { times : 1 } to Function.prototype.callback, is that we want to remove
-// the callback from the observers queue after being fired once, rather than keeping it in the queue.
-	function createSingleCallback( event, cb ) {
-		var ctx = this;
-		return ( cb.fire = function Observer_singleCallback() {
-			ctx.ignore( event, cb.fn, cb.ctx );
-			if ( cb.fired ) return;
-			cb.fired = true;
-			return cb.fn.apply( cb.ctx || ctx, arguments );
-		} );
-	}
+	function findIndex( observer, queue, fn, ctx ) {
+		var cb, i = -1; ctx || ( ctx = observer );
 
-	function find( e, o ) {
-		var i = -1, l = e.length;
-		while ( ++i < l ) if ( matchCallback( o, e[i] ) ) return e[i];
+		while ( cb = queue[++i] ) {
+			if ( cb === fn || ( cb.fn === fn && cb.ctx === ctx ) ) {
+				return i;
+			}
+		}
 		return null;
 	}
 
+	function getListener( listeners, queue, event ) {
+		var firing_event = String( this ), match;
 
-	function getObserver( r, v, k ) {
-		var m;
-		return ( k === this || ( Array.isArray( m = this.match( k ) ) && m[0] === this ) ) ? r.concat( v ) : r;
+		if ( event === firing_event )
+			listeners.push.apply( listeners, queue );
+		else {
+			match = firing_event.match( event );
+			if ( Array.isArray( match ) && match[0] === firing_event )
+				listeners.push.apply( listeners, queue );
+		}
+
+		return listeners;
 	}
-	function getObservers( o, e )   { return o.listeners.aggregate( [], getObserver, e ); }
+	function getListeners( observer, event ) {
+		return observer.listeners.aggregate( [], getListener, event );
+	}
 
 	function handleEvent( cb ) {
-		return function handleEvent() { return cb.handleEvent.apply( cb, arguments ); }.mimic( cb.fire );
+		return function handleEvent() {
+			return is_fun( cb.handleEvent ) ? cb.handleEvent.apply( cb, arguments ) : U;
+		};
 	}
 
-	function matchCallback( o, cb ) {
-		return ( o.isCB === true ? cb.fn.valueOf() === o.ctx.fire : cb.fn === o.fn ) && cb.ctx === o.ctx && cb.event === o.event;
+	function observe( observer, listeners ) {
+		listeners = util.copy( util.obj(), listeners );
+
+		var ctx     = listeners.ctx || observer,
+			event, listener, l_ctx, l_fn, l_options, l_type,
+			options = util.got( listeners, 'options' ) ? createCallbackConfig( listeners.options ) : U;
+
+		util.remove( listeners, 'ctx', 'options' );
+
+//todo:		Object.reduce( listeners, observe_type, observer );
+		for ( event in listeners ) { if ( util.has( listeners, event ) ) {
+			listener = listeners[event];
+			l_ctx    = U; l_fn = U;
+			l_type   = util.type( listener );
+
+			switch ( l_type ) {
+				case type_callback :
+					l_fn      = listener;
+					break;
+
+				case 'function'    : case 'array'  : case 'string' :
+					l_ctx     = ctx;
+					l_fn      = listener;
+					break;
+
+				case 'nullobject'  : case 'object' :
+					l_ctx     = listener.ctx || ctx;
+					l_fn      = listener.fn;
+					l_options = util.got( listener, 'options' ) ? createCallbackConfig( listener.options ) : options;
+					break;
+			}
+
+			observer.observe( event, l_fn, l_ctx, l_options );
+		} }
+
+		return observer;
+	}
+
+	function observe_multi( event, ctx, options ) {
+		return function _observe( fn ) {
+			this.observe( event, fn, ctx, options );
+		};
 	}
 
 	function relay() { return this.broadcast.apply( this, arguments ); }
 
-	function wildCardEsc( e ) { return e.replace( re_wc, '.*' ); }
+	function wildCardEsc( evt ) { return String( evt ).toLowerCase().replace( re_wc, '.*' ); }
 
-	var listener_id = 0, re_wc = /\*/g;
+	var re_wc = /\*/g, type_callback = Name + '-callback';
 
 	return {
 		constructor    : function Observer( observers ) {
@@ -98,25 +144,26 @@ __lib__.define( namespace( 'Observer' ), function() {
 		broadcast      : function( event ) {
 			if ( this.destroyed || this.observer_suspended || !this.listeners.length || !event ) return;
 
-			var args = Array.coerce( arguments, 1 ),
-				e    = getObservers( this, event ); // this.listeners.get( event ).slice(); // slice: so we can add/ remove observers while this event is firing without disrupting the queue;
+			var queue = getListeners( this, event ); // in any case will return a different array to the queue to ensure
+													 // any listeners added or removed during broadcast don't affect the
+													 // current broadcast
 
-			if ( !e.length ) return; // if no event listeners, then don't worry
+			if ( !queue.length ) return; 			 // if no event queue, then don't even bother
 
 			this.broadcasting = event;
 
 // if a callback returns false then we want to stop broadcasting, every will do this, forEach won't!
-			e.every( broadcast, { args : args, ctx : this } );
+			queue.every( broadcast.bind( this, Array.coerce( arguments, 1 ) ) );
 
 			this.broadcasting = false;
 		},
-		buffer         : function( ms, evt, fn, ctx, o ) {
-			is_obj( o ) || ( o = util.obj() ); o.buffer = Number( ms );
-			this.observe( evt, fn, ctx, o );
+		buffer         : function( ms, evt, fn, ctx, options ) {
+			is_obj( options ) || ( options = util.obj() ); options.buffer = Number( ms );
+			this.observe( evt, fn, ctx, options );
 		},
-		delay          : function( ms, evt, fn, ctx, o ) {
-			is_obj( o ) || ( o = util.obj() ); o.delay = Number( ms );
-			this.observe( evt, fn, ctx, o );
+		delay          : function( ms, evt, fn, ctx, options ) {
+			is_obj( options ) || ( options = util.obj() ); options.delay = Number( ms );
+			this.observe( evt, fn, ctx, options );
 		},
 		destroy        : function() {
 			if ( this.destroyed ) return true;
@@ -132,72 +179,77 @@ __lib__.define( namespace( 'Observer' ), function() {
 		},
 		ignore         : function( event, fn, ctx ) {
 			event = wildCardEsc( event.toLowerCase() );
-			var e = this.listeners.get( event ), i, o;
 
-			if ( !e ) return;
+			var queue = this.listeners.get( event ), i, o;
 
-			switch ( util.type( fn ) ) {
-				case ( Name + '-callback' ) : o = { ctx : fn,          isCB : true }; break;
-				default                     : o = { ctx : ctx || this, fn   : fn   };
-			}
-			o.event = event;
-			o = find( e, o );
-			if ( o !== null ) {
-				i = e.indexOf( o );
-				i < 0 || e.splice( i, 1 );
+			if ( !Array.isArray( queue ) || !queue.length ) return;
+
+			var index = findIndex( this, queue, fn, ctx );
+
+			!~index || queue.splice( index, 1 );
+		},
+		observe        : function( event, fn, ctx, options ) {
+			if ( is_obj( event ) )
+				return observe( this, event );
+
+			event = wildCardEsc( String( event ).toLowerCase() );
+
+			var queue = this.listeners.get( event ),
+				type  = util.type( fn );
+
+			Array.isArray( queue ) || this.listeners.set( event, ( queue = [] ) );
+
+			switch ( type ) {
+				case type_callback :
+					queue.push( fn );
+					break;
+
+				case 'array'       :
+					fn.map( observe_multi( event, ctx, options ), this );
+					break;
+
+				default            : switch( type ) {
+					case 'object'     :
+					case 'nullobject' : if ( util.has( fn, 'handleEvent' ) ) {
+						if ( is_obj( ctx ) && options === U )
+							options = ctx;
+						ctx = fn;
+						fn  = handleEvent( fn );
+					}      break;
+
+					case 'string'     : if ( is_obj( ctx ) ) {
+						fn = ctx[fn];
+					}      break;
+				}
+
+				queue.push( createCallback( fn, createCallbackConfig( options, ctx || this ) ) );
 			}
 		},
-		observe        : function( event, fn, ctx, o ) {
-			var cb, e = this.listeners, fnt, q;
-
-			if ( is_obj( event ) ) return addObservers.call( this, event );
-			switch ( ( fnt = util.type( fn ) ) ) {
-				case  'array' :
-					cb = util.obj(); cb[event] = { fn : fn, options : o, ctx : ctx };
-					return addObservers.call( this, cb );
-				case  'object' : case 'nullobject' : case ( Name + '-callback' ) : if ( 'handleEvent' in fn ) {
-					!( is_obj( ctx ) && o === U ) || ( o = ctx );
-					ctx = fn; fn = handleEvent( fn );
-				} break;
-				case 'string'  : !ctx || ( fn = ctx[fn] ); break;
-			}
-
-			event = wildCardEsc( event.toLowerCase() );
-			( q = e.get( event ) ) || e.set( event, ( q = [] ) );
-
-			switch( util.nativeType( o ) ) {
-				case 'boolean' : o = { single : !!o };       break;
-				case 'number'  : o = { delay  :   o };       break;
-				case 'object'  : o = util.copy( util.obj(), o ); break;
-				default        : o = util.obj();
-			}
-
-			Array.isArray( o.args ) || ( o.args = [] );
-
-			cb      = { ctx : ctx || this, event : event, fn : fn, id : ++listener_id, options : o };
-			cb.fire = ( o.single ? createSingleCallback.call( this, event, cb ) : cb.fn ).callback( {
-				args : o.args, buffer : o.buffer, ctx : cb.ctx, delay : o.delay
-			} );
-			q.push( cb );
-		},
-		once           : function( evt, fn, ctx, o ) {
-			is_obj( o ) || ( o = util.obj() );
-			o.single = true;
-			this.observe( evt, fn, ctx, o );
+		once           : function( evt, fn, ctx, options ) {
+			is_obj( options ) || ( options = util.obj() );
+			options.single = true;
+			this.observe( evt, fn, ctx, options );
 		},
 		purgeObservers : function( event ) {
-			var e = this.listeners;
-			if ( !event ) { e.clear(); return; }
-			event = event.toLowerCase();
-			!e.has( event ) || e.set( event, [] );
+			event ? this.listeners.set( wildCardEsc( event ), [] ) : this.listeners.clear();
 		},
-		relayEvents    : function( o ) {
+		relayEvents    : function( target_observer ) {
 			var e = Array.coerce( arguments, 1 ), evt;
 			while ( evt = e.shift() )
-				this.observe( evt, createRelayCallback( this, o, evt ), o );
+				this.observe( evt, createRelayCallback( this, target_observer, evt ), target_observer );
 		},
-		resumeEvents   : function() { !this.observer_suspended || ( this.observer_suspended = false, this.broadcast( 'observer:resumed'   ) ); },
-		suspendEvents  : function() {  this.observer_suspended || ( this.observer_suspended = true,  this.broadcast( 'observer:suspended' ) ); },
+		resumeEvents   : function() {
+			if ( !this.observer_suspended ) return;
+
+			this.observer_suspended = false;
+			this.broadcast( 'observer:resumed' );
+		},
+		suspendEvents  : function() {
+			if ( this.observer_suspended ) return;
+
+			this.broadcast( 'observer:suspended' );
+			this.observer_suspended = true;
+		},
 
 // internal methods
 		_destroy       : util.noop,

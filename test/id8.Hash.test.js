@@ -1,6 +1,8 @@
-typeof m8     !== 'undefined' || ( m8     = require( 'm8' ) );
-typeof id8    !== 'undefined' || ( id8    = require( 'id8' ) );
-typeof expect !== 'undefined' || ( expect = require( 'expect.js' ) );
+typeof id8  !== 'undefined' || ( id8  = require( 'id8' ) );
+typeof chai !== 'undefined' || ( chai = require( 'chai' ) );
+
+m8     = id8.m8;
+expect = chai.expect;
 
 suite( 'id8.Hash', function() {
 	var items = [1, 2, 3],
@@ -51,14 +53,14 @@ suite( 'id8.Hash', function() {
 
 	test( 'get', function( done ) {
 		expect( h.get( 'foo' ) ).to.eql( 'bar' );
-		expect( h.get( 'items' ) ).to.be( items );
+		expect( h.get( 'items' ) ).to.equal( items );
 
 		done();
 	} );
 
 	test( 'has', function( done ) {
-		expect( h.has( 'foo' ) ).to.be( true );
-		expect( h.has( 'items' ) ).to.be( true );
+		expect( h.has( 'foo' ) ).to.be.true;
+		expect( h.has( 'items' ) ).to.be.true;
 
 		done();
 	} );
@@ -84,10 +86,10 @@ suite( 'id8.Hash', function() {
 	test( 'remove', function( done ) {
 		var h = id8.Hash( { one : 1, two : 2, three : 3, four : 4, five : 5 } );
 
-		expect( h.remove( 'two' ) ).to.be( true );
-		expect( h.remove( 'four' ) ).to.be( true );
-		expect( h.remove(  1 ) ).to.be( false );
-		expect( h.remove( 'seven' ) ).to.be( false );
+		expect( h.remove( 'two' ) ).to.be.true;
+		expect( h.remove( 'four' ) ).to.be.true;
+		expect( h.remove(  1 ) ).to.be.false;
+		expect( h.remove( 'seven' ) ).to.be.false;
 		expect( h.valueOf() ).to.eql( { one : 1, three : 3, five : 5 } );
 
 		done();
@@ -97,7 +99,7 @@ suite( 'id8.Hash', function() {
 		h.set( 'lorem', 'ipsum' );
 
 		expect( h.get( 'lorem' ) ).to.eql( 'ipsum' );
-		expect( h.has( 'lorem' ) ).to.be( true );
+		expect( h.has( 'lorem' ) ).to.be.true;
 		expect( h.key( 'ipsum' ) ).to.eql( 'lorem' );
 
 		done();
