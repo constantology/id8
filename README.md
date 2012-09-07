@@ -36,6 +36,10 @@ If you are using id8 within a commonjs module, you don't need to require m8 befo
 
 See [m8: Extending into the future](/constantology/m8) for more information on working with sandboxed modules.
 
+## Support
+
+Tested to work with nodejs, FF4+, Safari 5+, Chrome 7+, IE9+. Should technically work in any browser that supports [ecma 5]( http://kangax.github.com/es5-compat-table/) without throwing any JavaScript errors.
+
 ## License
 
 (The MIT License)
