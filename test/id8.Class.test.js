@@ -98,10 +98,10 @@ suite( 'id8.Class', function() {
 		var f, b, z, w;
 		expect( ( f = new Class_01( 'hello world!' ) ) instanceof Class_01 ).to.be.true;
 		expect( f.greeting ).to.eql( 'hello world!' );
-		expect( ( b = new Class_02( 'hello world!' ) ) instanceof Class_02 ).to.be.true;
+		expect( ( b = new Class_02( 'hello world!' ) ) instanceof id8.get( 'path-to-class_02' ) ).to.be.true;
 		expect( b instanceof Class_01 ).to.be.true;
 		expect( b.greeting ).to.eql( 'class_02: hello world!' );
-		expect( ( z = new Class_03( 'hello world!' ) ) instanceof Class_03 ).to.be.true;
+		expect( ( z = new Class_03( 'hello world!' ) ) instanceof id8.get( 'Class_03' ) ).to.be.true;
 		expect( z instanceof Class_02 ).to.be.true;
 		expect( z instanceof Class_01 ).to.be.true;
 		expect( z.greeting ).to.eql( 'class_02: class_03: hello world!' );
