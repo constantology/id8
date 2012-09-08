@@ -20,8 +20,18 @@
 	}
 
 	function get( name_or_type ) {
-		return registered_path[name_or_type]              || registered_type[name_or_type]
-			|| registered_path[Name + '.' + name_or_type] || registered_type[Name_lc + '-' + name_or_type];
+		name_or_type = String( name_or_type );
+
+		if ( name_or_type in registered_path )
+			return registered_path[name_or_type];
+		if ( name_or_type in registered_type )
+			return registered_type[name_or_type];
+
+		var path = name_or_type.replace( re_invalid_chars, '' ),
+			type = name_or_type.toLowerCase();
+
+		return registered_path[path]              || registered_type[type]
+			|| registered_path[Name + '.' + path] || registered_type[Name_lc + '-' + type];
 	}
 
 	function is( instance, Class ) {
