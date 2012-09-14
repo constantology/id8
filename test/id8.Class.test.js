@@ -210,4 +210,54 @@ suite( 'id8.Class', function() {
 
 		done();
 	} );
+
+	test( 'method overriding', function( done ) {
+		var called_getNum = false, called_setNum = false;
+		Class_02.override( 'getNum', function() {
+			called_getNum = true;
+			return this.override();
+		} );
+		Class_02.override( {
+			setNum : function( num ) {
+				called_setNum = true;
+				num += 100;
+				return this.override( arguments );
+			}
+		} );
+
+		var instance = new Class_02( 'hello' );
+
+		expect( called_getNum ).to.be.true;
+		expect( called_setNum ).to.be.true;
+
+		expect( instance.num ).to.equal( 110 );
+
+		called_getNum = false;
+
+		expect( instance.getNum() ).to.equal( 110 );
+		expect( called_getNum ).to.be.true;
+		expect( instance.getNum() ).to.equal( instance.num );
+
+		called_setNum = false;
+
+		expect( instance.setNum( 100 ) ).to.equal( 200 );
+
+		expect( called_setNum ).to.be.true;
+
+		expect( instance.num ).to.equal( 200 );
+
+		done();
+	} );
+
+	test( 'method aliasing', function( done ) {
+		id8.Observer.alias( 'observe', 'on' );
+		id8.Observer.alias( {
+			ignore : 'off'
+		} );
+
+		expect( id8.Observer.prototype.observe ).to.equal( id8.Observer.prototype.on );
+		expect( id8.Observer.prototype.off ).to.equal( id8.Observer.prototype.ignore );
+
+		done();
+	} );
 } );

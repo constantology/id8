@@ -20,18 +20,23 @@
 	}
 
 	function get( name_or_type ) {
-		name_or_type = String( name_or_type );
+		switch ( util.nativeType( name_or_type ) ) {
+			case 'function' :
+			case 'object'   : return name_or_type;
+			case 'string'   :
+				if ( name_or_type in registered_path )
+					return registered_path[name_or_type];
+				if ( name_or_type in registered_type )
+					return registered_type[name_or_type];
 
-		if ( name_or_type in registered_path )
-			return registered_path[name_or_type];
-		if ( name_or_type in registered_type )
-			return registered_type[name_or_type];
+				var path = name_or_type.replace( re_invalid_chars, '' ),
+					type = name_or_type.toLowerCase();
 
-		var path = name_or_type.replace( re_invalid_chars, '' ),
-			type = name_or_type.toLowerCase();
+				return registered_path[path]              || registered_type[type]
+					|| registered_path[Name + '.' + path] || registered_type[Name_lc + '-' + type];
+		}
 
-		return registered_path[path]              || registered_type[type]
-			|| registered_path[Name + '.' + path] || registered_type[Name_lc + '-' + type];
+		return null;
 	}
 
 	function is( instance, Class ) {
@@ -47,6 +52,26 @@
 	function is_str( item ) { return typeof item == 'string'; }
 
 	function namespace( name ) { return '^' + Name + '.' + name; }
+
+	function process_after( Class ) {
+		var after = ( internals[Class[__guid__]] || internals.empty ).after;
+
+		!Array.isArray( after ) || after.map( function( fn ) {
+			!is_fun( fn ) || fn.call( null, this );
+		}, Class );
+
+		return Class;
+	}
+
+	function process_before( ctx ) {
+		var before = ( internals[ctx.constructor[__guid__]] || internals.empty ).before;
+
+		!Array.isArray( before ) || before.map( function( fn ) {
+			!is_fun( fn ) || fn.call( null, this.constructor, this );
+		}, ctx );
+
+		return ctx;
+	}
 
 	function register( Class ) {
 		var name = Class[__classname__], type = Class.prototype[__type__];

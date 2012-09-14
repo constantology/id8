@@ -1,7 +1,7 @@
-
 ;!function( util, Name, PACKAGE  ) {
 	"use strict";
 
+/*~  id8/src/lib.js  ~*/
 	function __lib__( name_or_type ) {
 		var Class = is_fun( name_or_type ) && util.type( name_or_type ) == 'class'
 				  ? name_or_type
@@ -24,18 +24,23 @@
 	}
 
 	function get( name_or_type ) {
-		name_or_type = String( name_or_type );
+		switch ( util.nativeType( name_or_type ) ) {
+			case 'function' :
+			case 'object'   : return name_or_type;
+			case 'string'   :
+				if ( name_or_type in registered_path )
+					return registered_path[name_or_type];
+				if ( name_or_type in registered_type )
+					return registered_type[name_or_type];
 
-		if ( name_or_type in registered_path )
-			return registered_path[name_or_type];
-		if ( name_or_type in registered_type )
-			return registered_type[name_or_type];
+				var path = name_or_type.replace( re_invalid_chars, '' ),
+					type = name_or_type.toLowerCase();
 
-		var path = name_or_type.replace( re_invalid_chars, '' ),
-			type = name_or_type.toLowerCase();
+				return registered_path[path]              || registered_type[type]
+					|| registered_path[Name + '.' + path] || registered_type[Name_lc + '-' + type];
+		}
 
-		return registered_path[path]              || registered_type[type]
-			|| registered_path[Name + '.' + path] || registered_type[Name_lc + '-' + type];
+		return null;
 	}
 
 	function is( instance, Class ) {
@@ -51,6 +56,26 @@
 	function is_str( item ) { return typeof item == 'string'; }
 
 	function namespace( name ) { return '^' + Name + '.' + name; }
+
+	function process_after( Class ) {
+		var after = ( internals[Class[__guid__]] || internals.empty ).after;
+
+		!Array.isArray( after ) || after.map( function( fn ) {
+			!is_fun( fn ) || fn.call( null, this );
+		}, Class );
+
+		return Class;
+	}
+
+	function process_before( ctx ) {
+		var before = ( internals[ctx.constructor[__guid__]] || internals.empty ).before;
+
+		!Array.isArray( before ) || before.map( function( fn ) {
+			!is_fun( fn ) || fn.call( null, this.constructor, this );
+		}, ctx );
+
+		return ctx;
+	}
 
 	function register( Class ) {
 		var name = Class[__classname__], type = Class.prototype[__type__];
@@ -77,22 +102,30 @@
 		return type in anon_list ? 'Anonymous' : type;
 	}
 
+/*~  id8/src/vars.js  ~*/
 	var __classname__    = '__classname__',
+		__config__       = '__config__',
+		__guid__         = '__guid__',
+		__method__       = '__method__',
+		__mixins__       = '__mixins__',
 		__name__         = '__name__',
 		__singleton__    = '__singleton__',
 		__super__        = '__super__',
 		__type__         = '__type__',
 		Name_lc          = Name.toLowerCase(), U,
 		anon_list        = Function.anon_list,
-		process          = util.obj(),
+		internals        = util.obj(),
 		re_invalid_chars = /[^A-Za-z0-9_\.]/g,
 		registered_path  = util.obj(),
 		registered_type  = util.obj();
 
+	internals.empty = { after : null, before : null, mixins : null };
+
+/*~  id8/src/lib.define.js  ~*/
 util.def( __lib__, 'define', function() {
 // public methods
 	function define( class_path, descriptor ) {
-		var Package, Class, ClassName,
+		var Package, Class, ClassName, Constructor,
 			class_config = extract_default_properties( descriptor, default_prop_names ),
 			class_name;
 
@@ -102,17 +135,25 @@ util.def( __lib__, 'define', function() {
 			delete descriptor.classname;
 		}
 
-		class_name = class_path.replace( re_invalid_chars, '' );
-		class_path = class_path.split( '.' );
+		class_name  = class_path.replace( re_invalid_chars, '' );
+		class_path  = class_path.split( '.' );
 		class_config.type || ( class_config.type = class_name.toLowerCase().split( '.' ).join( '-' ) );
 
-		Class      = __lib__.Class( class_config );
-		ClassName  = class_path.pop();
-		Package    = util.bless( class_path, descriptor.module );
+		ClassName   = class_path.pop();
+		Package     = util.bless( class_path, descriptor.module );
 
-		decorate( class_config.singleton ? Class.constructor : Class, class_name );
+		if ( !class_config.extend && __lib__.Source )
+			class_config.extend = __lib__.Source;
 
-		return Package[ClassName] = Class;
+		Class       = Package[ClassName] = __lib__.Class( class_config );
+
+		Constructor = class_config.singleton ? Class.constructor : Class;
+
+		decorate( Constructor, class_name );
+
+		process_after( Constructor );
+
+		return Class;
 	}
 
 	function decorate( Class, class_name ) {
@@ -120,11 +161,12 @@ util.def( __lib__, 'define', function() {
 		return register( Class );
 	}
 
-	var default_prop_names = 'after before mixins module'.split( ' ' ).reduce( to_obj, util.obj() );
+	var default_prop_names = 'module'.split( ' ' ).reduce( to_obj, util.obj() );
 
 	return define;
 }(), 'w' );
 
+/*~  id8/src/Class.js  ~*/
 util.def( __lib__, 'Class', function() {
 // public methods
 	function Class( config ) {
@@ -136,7 +178,40 @@ util.def( __lib__, 'Class', function() {
 	}
 
 // Class static methods
+	function alias( name_current, name_alias ) {
+		if ( util.type( this ) != desc_class_type.value )
+			return null;
+
+		var name, proto = this.prototype;
+
+		if ( is_obj( name_current ) ) {
+			for ( name in name_current )
+				!util.has( name_current, name ) || alias.call( this, name, name_current[name] );
+		}
+		else if ( is_fun( proto[name_current] ) )
+			util.def( proto, name_alias, get_method_descriptor( proto, name_current ), true );
+
+		return this;
+	}
+
 	function create() { return singleton( this ) || this.apply( Object.create( this.prototype ), arguments ); }
+
+	function override( name, method ) { // todo: overriding constructor is not yet implemented
+		if ( util.type( this ) != desc_class_type.value )
+			return null;
+
+		var proto = this.prototype;
+
+		if ( is_obj( name ) ) {
+			method = name;
+			for ( name in method )
+				!util.has( method, name ) || override.call( this, name, method[name] );
+		}
+		else if ( is_fun( method ) )
+			proto[name] = make_method( 'override', method, get_method_descriptor( proto, name ), name );
+
+		return this;
+	}
 
 	function singleton( Constructor ) { return !Constructor ? null : Constructor[__singleton__] || null; }
 
@@ -152,10 +227,10 @@ util.def( __lib__, 'Class', function() {
 		return desc;
 	}
 
-	function get_return_value( ctx, value, chain ) { return chain && value === U ? ctx : value; }
+	function get_return_value( ctx, value ) { return ctx[__chain__] === true && value === U ? ctx : value; }
 
-	function set_super_method( ctx, desc_super ) {
-		util.def( ctx, 'parent', desc_super, true );
+	function set_super_method( ctx, super_name, desc_super ) {
+		util.def( ctx, super_name, desc_super, true );
 		return ctx;
 	}
 
@@ -163,29 +238,35 @@ util.def( __lib__, 'Class', function() {
 	function add( key, value ) {
 		var desc;
 		switch ( util.nativeType( value ) ) {
-			case 'object'   : desc = value; break;
-			case 'function' : desc = util.describe( make_method( value, get_method_descriptor( this, key ), key ), 'cw' ); break;
-			default         : desc = util.describe( value, 'ew' );
+			case 'object'   : desc = util.got( value, 'value', 'get', 'set' ) ? value : util.describe( { value : value }, 'cw' );    break;
+			case 'function' : desc = util.describe( make_method( 'parent', value, get_method_descriptor( this, key ), key ), 'cw' ); break;
+			default         : desc = util.describe( value, 'cew' );
 		}
 		util.def( this, key, desc, true );
 		return this.constructor;
 	}
 
-	function decorate( Constructor ) {
+	function decorate( Constructor, config ) {
 		util.def( Constructor, __type__, desc_class_type, true );
 		util.defs( Constructor, {
-			add    : add.bind( Constructor.prototype ),
-			create : create.bind( Constructor )
+			add      : add.bind( Constructor.prototype ),
+			alias    : alias.bind( Constructor ),
+			create   : create.bind( Constructor ),
+			override : override.bind( Constructor )
 		}, 'r', true );
 		return Constructor;
 	}
 
 	function make_class( config ) {
-		function Class_constructor() {
-			return is( this, Class_constructor )
-				 ? singleton( this.constructor )
-				|| get_return_value( this, Constructor.call( this, arguments ), true )
-				 : create.apply( Class_constructor, arguments );
+		function Class() {
+			var type = util.type( this );
+			if ( !type || type == 'global' || util.type( this.constructor ) != 'class' )
+				return create.apply( Class, arguments );
+
+			if ( singleton( this.constructor ) )
+				return this.constructor[__singleton__];
+
+			return get_return_value( process_before( this ), Constructor.call( this, arguments ) );
 		}
 
 		var ctor        = config.constructor,
@@ -194,23 +275,27 @@ util.def( __lib__, 'Class', function() {
 						? desc_false
 						: desc_true,
 			desc_super  = get_method_descriptor( super_class.prototype, 'constructor' ),
-			name        = ctor[__name__],
-			prototype   = Class_constructor.prototype = make_prototype( config ),
-			Constructor = make_method( ctor, desc_super );
+			name        = ctor ? ctor[__name__] : 'Anonymous',
+			prototype   = Class.prototype = make_prototype( config ),
+			Constructor = make_method( 'parent', ctor, desc_super, 'constructor' );
 
-		prototype.constructor = Class_constructor;
+		prototype.constructor = Class;
+		prototype.override    = desc_default_super.value;
 		prototype.parent      = desc_default_super.value;
 
-		util.def( Class_constructor, __super__, desc_super, true )
-			.def( prototype,         __chain__, desc_chain, true );
+		util.def( Class, __guid__,   util.guid(), 'r', true )
+			.def( Class, __super__,  desc_super,       true )
+			.def( prototype,         __chain__,  desc_chain,       true );
+
+		make_processable( Class, config );
 
 // this is over-written by id8.define, unless the Class was not created using id8.define
 // this will allow us to try and keep things as nice as possible.
 		   util.got( anon_list, name )
-		|| util.def( Class_constructor, __classname__, name, 'cw' )
-			   .def( Class_constructor, 'displayName', name, 'cw' );
+		|| util.def( Class, __classname__, name, 'cw' )
+			   .def( Class, 'displayName', name, 'cw' );
 
-		return decorate( Class_constructor.mimic( ctor ) );
+		return decorate( Class.mimic( ctor ) );
 	}
 
 	function make_config( descriptor ) {
@@ -222,7 +307,7 @@ util.def( __lib__, 'Class', function() {
 		!is_str( super_class ) || ( super_class = get( super_class ) );
 		 is_fun( super_class ) || ( super_class = Object );
 
-// make sure we have a constructor and if using the "extend", not Class_constructor
+// make sure we have a constructor and if using the "extend", not Class
 		( is_fun( ctor ) && ctor !== Object ) || ( ctor = super_class.valueOf() );
 
 // set a type for this Class' instances if one is not defined
@@ -231,23 +316,66 @@ util.def( __lib__, 'Class', function() {
 		|| util.got( anon_list, ( name = String( ctor[__name__] ) ) )
 		|| ( class_config.type = name.toLowerCase() );
 
-		class_config.constructor = ctor;
+		class_config.constructor = ctor && ctor !== Object ? ctor : super_class;
 		class_config.extend      = super_class;
 
 		return class_config;
 	}
 
-	function make_method( method, desc_super, name ) {
-		desc_super = !is_obj( desc_super ) || method.valueOf() === desc_super.value.valueOf()
-				   ? desc_default_super
-				   : desc_super            || desc_default_super;
+	function make_method( super_name, method, desc_super, method_name ) {
+		var super_method = null;
+
+		//noinspection FallthroughInSwitchStatementJS
+		switch ( util.nativeType( desc_super ) ) {
+			case 'function' : desc_super   = util.describe( desc_super, 'cw' ); // allow fall-through
+			case 'object'   : super_method = desc_super.value; break;
+		}
+
+		if ( !super_method )
+			desc_super = desc_default_super;
+
+		if ( method.valueOf() === super_method.valueOf() ) {
+			method     = super_method;
+			desc_super = desc_default_super;
+		}
 
 		return function Class_instance_method() {
-			var desc = get_method_descriptor( this, 'parent' );
-			return get_return_value( set_super_method( this, desc_super ),
-									 method.apply( this, get_args( arguments ) ),
-									 set_super_method( this, desc )[__chain__] !== false );
-		}.mimic( method, name );
+			var desc             = get_method_descriptor( this, super_name ),
+				previous_method  = this[__method__],
+				return_value,
+				no_update_method = ( previous_method in internal_method_names || method_name in internal_method_names );
+
+			set_super_method( this, super_name, desc_super );
+
+			no_update_method || util.def( this, __method__, method_name, 'w', true );
+
+			return_value = ( method || desc_super.value ).apply( this, get_args( arguments ) );
+
+			no_update_method || util.def( this, __method__, previous_method, 'w', true );
+
+			set_super_method( this, super_name, desc );
+
+			return get_return_value( this, return_value );
+		}.mimic( method, method_name );
+	}
+
+	function make_processable( Class, config ) {
+		var after = [], before = [], super_class = internals[config.extend[__guid__]];
+
+		internals[Class[__guid__]] = {
+			after  : after,
+			before : before
+		};
+
+		if ( super_class ) {
+			!Array.isArray( super_class.after  ) || after.push.apply(  after,  super_class.after  );
+			!Array.isArray( super_class.before ) || before.push.apply( before, super_class.before );
+		}
+
+		!is_fun( config.afterdefine    ) || after.push(  config.afterdefine    );
+		!is_fun( config.beforeinstance ) || before.push( config.beforeinstance );
+
+		return Class;
 	}
 
 	function make_prototype( class_config ) {
@@ -256,21 +384,20 @@ util.def( __lib__, 'Class', function() {
 			processed   = util.obj(),
 			prototype   = Object.reduce( desc, function( proto, value, key ) {
 				processed[key] = true;
-				add.call( proto, key, value );
+				key in internal_method_names || add.call( proto, key, value );
 				return proto;
 			}, Object.create( super_class.prototype ) );
 
 // this allows you to call "this.parent();" on a Class that has no Super Class, without throwing any errors...
 		Object.getOwnPropertyNames( prototype ).forEach( function( key ) {
 // skip non-methods and already processed properties
-			key in processed || !is_fun( this[key] ) || add.call( this, key, util.describe( make_method( this[key], desc_default_super ), 'cw' ) );
+			 key in processed    || key in internal_method_names ||
+			!is_fun( this[key] ) || add.call( this, key, util.describe( make_method( 'parent', this[key], desc_default_super, key ), 'cw' ) );
 		}, prototype );
 
-		util.def(  prototype, __type__, class_config.type, 'w', true );
-		util.defs( prototype, {
-			mixins : { value : util.obj() },
-			parent : desc_default_super
-		}, 'w', true );
+		util.def( prototype, __type__,   class_config.type,  'w', true )
+			.def( prototype, 'override', desc_default_super, 'w', true )
+			.def( prototype, 'parent',   desc_default_super, 'w', true );
 
 		return prototype;
 	}
@@ -283,17 +410,130 @@ util.def( __lib__, 'Class', function() {
 		return instance;
 	}
 
-	var __chain__          = '__chain__',
-		default_prop_names = 'chain constructor extend singleton type'.split( ' ' ).reduce( to_obj, util.obj() ),
-		desc_class_type    =  util.describe( 'class', 'r' ),
-		desc_default_super =  util.describe( make_method( util.noop, util.describe( util.noop, 'cw' ), 'parent' ), 'cw' ),
-		desc_false         =  util.describe( false,   'w' ),
-		desc_true          =  util.describe( true,    'w' );//,
-//		empty_batch        = { after : [], before : [] };
+	var __chain__             = '__chain__',
+		default_prop_names    = 'afterdefine beforeinstance chain constructor extend singleton type'.split( ' ' ).reduce( to_obj, util.obj() ),
+		desc_class_type       =  util.describe( 'class', 'r' ),
+		desc_default_super    =  util.describe( make_method( 'parent', util.noop, util.describe( util.noop, 'cw' ), 'parent' ), 'cw' ),
+		desc_false            =  util.describe( false,   'w' ),
+		desc_true             =  util.describe( true,    'w' ),
+		internal_method_names = 'mixin override parent'.split( ' ' ).reduce( to_obj, util.obj() );
 
 	return Class;
 }(), 'w' );
 
+/*~  id8/src/Source.js  ~*/
+__lib__.define( namespace( 'Source' ), function() {
+	function afterdefine( Class  ) {
+		var mixins = Class.prototype.mixins || util.obj(), name;
+
+		delete Class.prototype.mixins;
+
+		decorate( Class ).mixin( mixins );
+
+		mixins = Class[__super__][__mixins__];
+
+		if ( is_obj( mixins ) && util.len( mixins ) )
+			for ( name in mixins )
+				!util.has( mixins, name ) || util.got( Class.mixins, name ) || Class.mixin( name, mixins[name] );
+
+		return Class;
+	}
+
+	function decorate( Class ) {
+		util.def( Class, __mixins__, { value : util.obj() },     'w', true );
+		util.def( Class,  'mixin',   mixins_apply.bind( Class ), 'w', true );
+
+		if ( !is_fun( Class.prototype.mixin ) )
+			Class.prototype.mixin = mixin_exec;
+
+		return Class;
+	}
+
+	function get_name( path ) {
+		return String( path ).split( '.' ).pop().toLowerCase();
+	}
+
+	function mixin_apply( Class, mixin, name ) {
+		//noinspection FallthroughInSwitchStatementJS
+		switch ( util.nativeType( mixin ) ) {
+			case 'object'   :                                  break;
+			case 'string'   : if ( !( mixin = get( mixin ) ) ) break; // allowing fall-through if a Class is found,
+			case 'function' : mixin = mixin.prototype;         break; // otherwise break out baby!!!
+		}
+
+		if ( mixin ) {
+ // Since this is a mixin and not a super class we only want to add properties/methods that do not already exist to the Class
+ // The rest can be called within the existing method as this.mixin( mixin_name, arguments );
+			Object.getOwnPropertyNames( mixin ).map( function( property ) {
+				util.has( this, property ) || Class.add( property, mixin[property] );
+			}, Class.prototype );
+
+			util.def( Class[__mixins__], get_name( name ), { value : mixin }, 'e', true );
+		}
+		return Class;
+	}
+
+	function mixins_apply( mixins ) {
+		switch ( util.nativeType( mixins ) ) {
+			case 'object'   : Object.reduce( mixins, mixin_apply, this );                                         break;
+			case 'string'   : mixin_apply( this, mixins, get_name( mixins ) );                                    break;
+			case 'function' : mixin_apply( this, mixins, get_name( mixins[__classname__] || mixins[__name__] ) ); break;
+		}
+		return this;
+	}
+
+	function mixin_exec( name, args ) {
+		var mx     = this.constructor[__mixins__],
+			method = this[__method__];
+
+		switch ( arguments.length ) {
+			case 2  :            break;
+			case 1  : args = []; break;
+			case 0  : name = []; break;
+			default : args = Array.coerce( arguments, 1 );
+		}
+
+		if ( !is_str( name ) ) { // warning! doing it this way cannot guarantee order of execution!
+			args = name;
+
+			Object.getOwnPropertyNames( mx ).map( function( name ) {
+				this.mixin( name, args );
+			}, this );
+
+			return;
+		}
+
+		if ( mx[name] && is_fun( mx[name][method] ) )
+			return mx[name][method].apply( this, args );
+	}
+
+	return {
+		constructor    : function Source( config ) {
+			this.applyConfig( this.initConfig( config ) ).onInitialize();
+		},
+		afterdefine    : afterdefine,
+		module         : __lib__,
+// public properties
+		mixins         : null,
+// public methods
+// constructor methods
+// internal methods
+		applyConfig : function( config ) {
+			util.copy( this, config );
+		},
+		initConfig   : function( config ) {
+			if ( !is_obj( config ) )
+				config = util.obj();
+
+			util.def( this, __config__, { value : config }, 'r', true );
+
+			return this[__config__];
+		},
+		onInitialize : function() {}
+	};
+}() );
+
+/*~  id8/src/Callback.js  ~*/
 __lib__.define( namespace( 'Callback' ), function() {
 	function buffer() {
 		if ( bid in this ) return this;
@@ -365,20 +605,25 @@ __lib__.define( namespace( 'Callback' ), function() {
 	};
 }() );
 
+/*~  id8/src/Hash.js  ~*/
 __lib__.define( namespace( 'Hash' ), function() {
-	var ID = '__hashid__', cache = [];
+	var ID = __guid__, cache = util.obj();
 
 	return {
 		constructor : function Hash( o ) {
-			util.def( this, ID, util.describe( cache.push( util.obj() ) - 1, 'w' ) );
+			util.def( this, ID, util.guid(), 'r', true );
+
+			cache[this[ID]] = util.obj();
+
 			!is_obj( o ) || this.set( o );
 		},
+		extend      : Object,
 		module      : __lib__,
-
+// public properties
 		keys        : { get : function() { return Object.keys( cache[this[ID]] ); } },
 		length      : { get : function() { return this.keys.length; } },
 		values      : { get : function() { return Object.values( cache[this[ID]] ); } },
-
+// public methods
 		aggregate   : function( val, fn, ctx ) {
 			var H = this, o = cache[this[ID]]; ctx || ( ctx = H );
 			return Object.keys( o ).reduce( function( res, k, i ) { return fn.call( ctx, res, o[k], k, H, i ); }, val );
@@ -415,6 +660,7 @@ __lib__.define( namespace( 'Hash' ), function() {
 	};
 }() );
 
+/*~  id8/src/Observer.js  ~*/
 __lib__.define( namespace( 'Observer' ), function() {
 	function broadcast( args, cb ) {
 		if ( !is_fun( cb.handleEvent ) ) return true;
@@ -550,17 +796,22 @@ __lib__.define( namespace( 'Observer' ), function() {
 	var re_wc = /\*/g, type_callback = Name + '-callback';
 
 	return {
-		constructor    : function Observer( observers ) {
-			this.broadcasting       = false; this.destroyed = false;
-			this.observer_suspended = false; this.listeners = __lib__( 'Hash' );
+		constructor        : function Observer( observers ) {
+			this.listeners = __lib__( 'Hash' );
 
-			!is_obj( observers )      || this.observe( observers );
-			!is_obj( this.observers ) || this.observe( this.observers ), delete this.observers;
+			!is_obj( observers ) || this.observe( observers );
 		},
-		module         : __lib__,
+		extend             : Object,
+		module             : __lib__,
+
+// public properties
+		broadcasting       : false,
+		destroyed          : false,
+		destroying         : false,
+		observer_suspended : false,
 
 // public methods
-		broadcast      : function( event ) {
+		broadcast          : function( event ) {
 			if ( this.destroyed || this.observer_suspended || !this.listeners.length || !event ) return;
 
 			var queue = getListeners( this, event ); // in any case will return a different array to the queue to ensure
@@ -576,15 +827,15 @@ __lib__.define( namespace( 'Observer' ), function() {
 
 			this.broadcasting = false;
 		},
-		buffer         : function( ms, evt, fn, ctx, options ) {
+		buffer             : function( ms, evt, fn, ctx, options ) {
 			is_obj( options ) || ( options = util.obj() ); options.buffer = Number( ms );
 			this.observe( evt, fn, ctx, options );
 		},
-		delay          : function( ms, evt, fn, ctx, options ) {
+		delay              : function( ms, evt, fn, ctx, options ) {
 			is_obj( options ) || ( options = util.obj() ); options.delay = Number( ms );
 			this.observe( evt, fn, ctx, options );
 		},
-		destroy        : function() {
+		destroy            : function() {
 			if ( this.destroyed ) return true;
 			if ( this.broadcast( 'before:destroy' ) === false ) return false;
 			this.destroying = true;
@@ -596,7 +847,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 			delete this.listeners;
 			return true;
 		},
-		ignore         : function( event, fn, ctx ) {
+		ignore             : function( event, fn, ctx ) {
 			event = wildCardEsc( event.toLowerCase() );
 
 			var queue = this.listeners.get( event ), i, o;
@@ -607,7 +858,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 
 			!~index || queue.splice( index, 1 );
 		},
-		observe        : function( event, fn, ctx, options ) {
+		observe            : function( event, fn, ctx, options ) {
 			if ( is_obj( event ) )
 				return observe( this, event );
 
@@ -643,26 +894,26 @@ __lib__.define( namespace( 'Observer' ), function() {
 				queue.push( createCallback( fn, createCallbackConfig( options, ctx || this ) ) );
 			}
 		},
-		once           : function( evt, fn, ctx, options ) {
+		once               : function( evt, fn, ctx, options ) {
 			is_obj( options ) || ( options = util.obj() );
 			options.single = true;
 			this.observe( evt, fn, ctx, options );
 		},
-		purgeObservers : function( event ) {
+		purgeObservers     : function( event ) {
 			event ? this.listeners.set( wildCardEsc( event ), [] ) : this.listeners.clear();
 		},
-		relayEvents    : function( target_observer ) {
+		relayEvents        : function( target_observer ) {
 			var e = Array.coerce( arguments, 1 ), evt;
 			while ( evt = e.shift() )
 				this.observe( evt, createRelayCallback( this, target_observer, evt ), target_observer );
 		},
-		resumeEvents   : function() {
+		resumeEvents       : function() {
 			if ( !this.observer_suspended ) return;
 
 			this.observer_suspended = false;
 			this.broadcast( 'observer:resumed' );
 		},
-		suspendEvents  : function() {
+		suspendEvents      : function() {
 			if ( this.observer_suspended ) return;
 
 			this.broadcast( 'observer:suspended' );
@@ -675,12 +926,14 @@ __lib__.define( namespace( 'Observer' ), function() {
 	};
 }() );
 
+/*~  id8/src/nativex.js  ~*/
 	util.x.cache( 'Function', function( Type ) {
 		util.def( Type.prototype, 'callback', function( conf ) {
 			return ( new __lib__.Callback( this, conf ) ).fire.mimic( this );
 		}, 'w' );
 	} );
 
+/*~  id8/src/expose.js  ~*/
 	util.iter( PACKAGE ) || ( PACKAGE = util.ENV == 'commonjs' ? module : util.global );
 
 	util.defs( ( __lib__ = util.expose( __lib__, Name, PACKAGE ) ), {
@@ -691,7 +944,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 	util.expose( util, __lib__ );           // store a reference to m8 on id8
 	util.def( __lib__, 'util', util, 'w' ); // store a reference as util as well so we can avoid hard reference in other libs
 
-	anon_list.Class_constructor     = true; // add these two method names to the anonymous function names list
+	anon_list.Class                 = true; // add these two method names to the anonymous function names list
 	anon_list.Class_instance_method = true; // this will give us more clarity when debugging
 
 // extend Function and Object natives with id8's extensions if not sandboxed

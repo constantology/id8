@@ -133,17 +133,22 @@ __lib__.define( namespace( 'Observer' ), function() {
 	var re_wc = /\*/g, type_callback = Name + '-callback';
 
 	return {
-		constructor    : function Observer( observers ) {
-			this.broadcasting       = false; this.destroyed = false;
-			this.observer_suspended = false; this.listeners = __lib__( 'Hash' );
+		constructor        : function Observer( observers ) {
+			this.listeners = __lib__( 'Hash' );
 
-			!is_obj( observers )      || this.observe( observers );
-			!is_obj( this.observers ) || this.observe( this.observers ), delete this.observers;
+			!is_obj( observers ) || this.observe( observers );
 		},
-		module         : __lib__,
+		extend             : Object,
+		module             : __lib__,
+
+// public properties
+		broadcasting       : false,
+		destroyed          : false,
+		destroying         : false,
+		observer_suspended : false,
 
 // public methods
-		broadcast      : function( event ) {
+		broadcast          : function( event ) {
 			if ( this.destroyed || this.observer_suspended || !this.listeners.length || !event ) return;
 
 			var queue = getListeners( this, event ); // in any case will return a different array to the queue to ensure
@@ -159,15 +164,15 @@ __lib__.define( namespace( 'Observer' ), function() {
 
 			this.broadcasting = false;
 		},
-		buffer         : function( ms, evt, fn, ctx, options ) {
+		buffer             : function( ms, evt, fn, ctx, options ) {
 			is_obj( options ) || ( options = util.obj() ); options.buffer = Number( ms );
 			this.observe( evt, fn, ctx, options );
 		},
-		delay          : function( ms, evt, fn, ctx, options ) {
+		delay              : function( ms, evt, fn, ctx, options ) {
 			is_obj( options ) || ( options = util.obj() ); options.delay = Number( ms );
 			this.observe( evt, fn, ctx, options );
 		},
-		destroy        : function() {
+		destroy            : function() {
 			if ( this.destroyed ) return true;
 			if ( this.broadcast( 'before:destroy' ) === false ) return false;
 			this.destroying = true;
@@ -179,7 +184,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 			delete this.listeners;
 			return true;
 		},
-		ignore         : function( event, fn, ctx ) {
+		ignore             : function( event, fn, ctx ) {
 			event = wildCardEsc( event.toLowerCase() );
 
 			var queue = this.listeners.get( event ), i, o;
@@ -190,7 +195,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 
 			!~index || queue.splice( index, 1 );
 		},
-		observe        : function( event, fn, ctx, options ) {
+		observe            : function( event, fn, ctx, options ) {
 			if ( is_obj( event ) )
 				return observe( this, event );
 
@@ -226,26 +231,26 @@ __lib__.define( namespace( 'Observer' ), function() {
 				queue.push( createCallback( fn, createCallbackConfig( options, ctx || this ) ) );
 			}
 		},
-		once           : function( evt, fn, ctx, options ) {
+		once               : function( evt, fn, ctx, options ) {
 			is_obj( options ) || ( options = util.obj() );
 			options.single = true;
 			this.observe( evt, fn, ctx, options );
 		},
-		purgeObservers : function( event ) {
+		purgeObservers     : function( event ) {
 			event ? this.listeners.set( wildCardEsc( event ), [] ) : this.listeners.clear();
 		},
-		relayEvents    : function( target_observer ) {
+		relayEvents        : function( target_observer ) {
 			var e = Array.coerce( arguments, 1 ), evt;
 			while ( evt = e.shift() )
 				this.observe( evt, createRelayCallback( this, target_observer, evt ), target_observer );
 		},
-		resumeEvents   : function() {
+		resumeEvents       : function() {
 			if ( !this.observer_suspended ) return;
 
 			this.observer_suspended = false;
 			this.broadcast( 'observer:resumed' );
 		},
-		suspendEvents  : function() {
+		suspendEvents      : function() {
 			if ( this.observer_suspended ) return;
 
 			this.broadcast( 'observer:suspended' );

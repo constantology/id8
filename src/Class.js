@@ -9,7 +9,40 @@ util.def( __lib__, 'Class', function() {
 	}
 
 // Class static methods
+	function alias( name_current, name_alias ) {
+		if ( util.type( this ) != desc_class_type.value )
+			return null;
+
+		var name, proto = this.prototype;
+
+		if ( is_obj( name_current ) ) {
+			for ( name in name_current )
+				!util.has( name_current, name ) || alias.call( this, name, name_current[name] );
+		}
+		else if ( is_fun( proto[name_current] ) )
+			util.def( proto, name_alias, get_method_descriptor( proto, name_current ), true );
+
+		return this;
+	}
+
 	function create() { return singleton( this ) || this.apply( Object.create( this.prototype ), arguments ); }
+
+	function override( name, method ) { // todo: overriding constructor is not yet implemented
+		if ( util.type( this ) != desc_class_type.value )
+			return null;
+
+		var proto = this.prototype;
+
+		if ( is_obj( name ) ) {
+			method = name;
+			for ( name in method )
+				!util.has( method, name ) || override.call( this, name, method[name] );
+		}
+		else if ( is_fun( method ) )
+			proto[name] = make_method( 'override', method, get_method_descriptor( proto, name ), name );
+
+		return this;
+	}
 
 	function singleton( Constructor ) { return !Constructor ? null : Constructor[__singleton__] || null; }
 
@@ -25,10 +58,10 @@ util.def( __lib__, 'Class', function() {
 		return desc;
 	}
 
-	function get_return_value( ctx, value, chain ) { return chain && value === U ? ctx : value; }
+	function get_return_value( ctx, value ) { return ctx[__chain__] === true && value === U ? ctx : value; }
 
-	function set_super_method( ctx, desc_super ) {
-		util.def( ctx, 'parent', desc_super, true );
+	function set_super_method( ctx, super_name, desc_super ) {
+		util.def( ctx, super_name, desc_super, true );
 		return ctx;
 	}
 
@@ -36,29 +69,35 @@ util.def( __lib__, 'Class', function() {
 	function add( key, value ) {
 		var desc;
 		switch ( util.nativeType( value ) ) {
-			case 'object'   : desc = value; break;
-			case 'function' : desc = util.describe( make_method( value, get_method_descriptor( this, key ), key ), 'cw' ); break;
-			default         : desc = util.describe( value, 'ew' );
+			case 'object'   : desc = util.got( value, 'value', 'get', 'set' ) ? value : util.describe( { value : value }, 'cw' );    break;
+			case 'function' : desc = util.describe( make_method( 'parent', value, get_method_descriptor( this, key ), key ), 'cw' ); break;
+			default         : desc = util.describe( value, 'cew' );
 		}
 		util.def( this, key, desc, true );
 		return this.constructor;
 	}
 
-	function decorate( Constructor ) {
+	function decorate( Constructor, config ) {
 		util.def( Constructor, __type__, desc_class_type, true );
 		util.defs( Constructor, {
-			add    : add.bind( Constructor.prototype ),
-			create : create.bind( Constructor )
+			add      : add.bind( Constructor.prototype ),
+			alias    : alias.bind( Constructor ),
+			create   : create.bind( Constructor ),
+			override : override.bind( Constructor )
 		}, 'r', true );
 		return Constructor;
 	}
 
 	function make_class( config ) {
-		function Class_constructor() {
-			return is( this, Class_constructor )
-				 ? singleton( this.constructor )
-				|| get_return_value( this, Constructor.call( this, arguments ), true )
-				 : create.apply( Class_constructor, arguments );
+		function Class() {
+			var type = util.type( this );
+			if ( !type || type == 'global' || util.type( this.constructor ) != 'class' )
+				return create.apply( Class, arguments );
+
+			if ( singleton( this.constructor ) )
+				return this.constructor[__singleton__];
+
+			return get_return_value( process_before( this ), Constructor.call( this, arguments ) );
 		}
 
 		var ctor        = config.constructor,
@@ -67,23 +106,27 @@ util.def( __lib__, 'Class', function() {
 						? desc_false
 						: desc_true,
 			desc_super  = get_method_descriptor( super_class.prototype, 'constructor' ),
-			name        = ctor[__name__],
-			prototype   = Class_constructor.prototype = make_prototype( config ),
-			Constructor = make_method( ctor, desc_super );
+			name        = ctor ? ctor[__name__] : 'Anonymous',
+			prototype   = Class.prototype = make_prototype( config ),
+			Constructor = make_method( 'parent', ctor, desc_super, 'constructor' );
 
-		prototype.constructor = Class_constructor;
+		prototype.constructor = Class;
+		prototype.override    = desc_default_super.value;
 		prototype.parent      = desc_default_super.value;
 
-		util.def( Class_constructor, __super__, desc_super, true )
-			.def( prototype,         __chain__, desc_chain, true );
+		util.def( Class, __guid__,   util.guid(), 'r', true )
+			.def( Class, __super__,  desc_super,       true )
+			.def( prototype,         __chain__,  desc_chain,       true );
+
+		make_processable( Class, config );
 
 // this is over-written by id8.define, unless the Class was not created using id8.define
 // this will allow us to try and keep things as nice as possible.
 		   util.got( anon_list, name )
-		|| util.def( Class_constructor, __classname__, name, 'cw' )
-			   .def( Class_constructor, 'displayName', name, 'cw' );
+		|| util.def( Class, __classname__, name, 'cw' )
+			   .def( Class, 'displayName', name, 'cw' );
 
-		return decorate( Class_constructor.mimic( ctor ) );
+		return decorate( Class.mimic( ctor ) );
 	}
 
 	function make_config( descriptor ) {
@@ -95,7 +138,7 @@ util.def( __lib__, 'Class', function() {
 		!is_str( super_class ) || ( super_class = get( super_class ) );
 		 is_fun( super_class ) || ( super_class = Object );
 
-// make sure we have a constructor and if using the "extend", not Class_constructor
+// make sure we have a constructor and if using the "extend", not Class
 		( is_fun( ctor ) && ctor !== Object ) || ( ctor = super_class.valueOf() );
 
 // set a type for this Class' instances if one is not defined
@@ -104,23 +147,66 @@ util.def( __lib__, 'Class', function() {
 		|| util.got( anon_list, ( name = String( ctor[__name__] ) ) )
 		|| ( class_config.type = name.toLowerCase() );
 
-		class_config.constructor = ctor;
+		class_config.constructor = ctor && ctor !== Object ? ctor : super_class;
 		class_config.extend      = super_class;
 
 		return class_config;
 	}
 
-	function make_method( method, desc_super, name ) {
-		desc_super = !is_obj( desc_super ) || method.valueOf() === desc_super.value.valueOf()
-				   ? desc_default_super
-				   : desc_super            || desc_default_super;
+	function make_method( super_name, method, desc_super, method_name ) {
+		var super_method = null;
+
+		//noinspection FallthroughInSwitchStatementJS
+		switch ( util.nativeType( desc_super ) ) {
+			case 'function' : desc_super   = util.describe( desc_super, 'cw' ); // allow fall-through
+			case 'object'   : super_method = desc_super.value; break;
+		}
+
+		if ( !super_method )
+			desc_super = desc_default_super;
+
+		if ( method.valueOf() === super_method.valueOf() ) {
+			method     = super_method;
+			desc_super = desc_default_super;
+		}
 
 		return function Class_instance_method() {
-			var desc = get_method_descriptor( this, 'parent' );
-			return get_return_value( set_super_method( this, desc_super ),
-									 method.apply( this, get_args( arguments ) ),
-									 set_super_method( this, desc )[__chain__] !== false );
-		}.mimic( method, name );
+			var desc             = get_method_descriptor( this, super_name ),
+				previous_method  = this[__method__],
+				return_value,
+				no_update_method = ( previous_method in internal_method_names || method_name in internal_method_names );
+
+			set_super_method( this, super_name, desc_super );
+
+			no_update_method || util.def( this, __method__, method_name, 'w', true );
+
+			return_value = ( method || desc_super.value ).apply( this, get_args( arguments ) );
+
+			no_update_method || util.def( this, __method__, previous_method, 'w', true );
+
+			set_super_method( this, super_name, desc );
+
+			return get_return_value( this, return_value );
+		}.mimic( method, method_name );
+	}
+
+	function make_processable( Class, config ) {
+		var after = [], before = [], super_class = internals[config.extend[__guid__]];
+
+		internals[Class[__guid__]] = {
+			after  : after,
+			before : before
+		};
+
+		if ( super_class ) {
+			!Array.isArray( super_class.after  ) || after.push.apply(  after,  super_class.after  );
+			!Array.isArray( super_class.before ) || before.push.apply( before, super_class.before );
+		}
+
+		!is_fun( config.afterdefine    ) || after.push(  config.afterdefine    );
+		!is_fun( config.beforeinstance ) || before.push( config.beforeinstance );
+
+		return Class;
 	}
 
 	function make_prototype( class_config ) {
@@ -129,21 +215,20 @@ util.def( __lib__, 'Class', function() {
 			processed   = util.obj(),
 			prototype   = Object.reduce( desc, function( proto, value, key ) {
 				processed[key] = true;
-				add.call( proto, key, value );
+				key in internal_method_names || add.call( proto, key, value );
 				return proto;
 			}, Object.create( super_class.prototype ) );
 
 // this allows you to call "this.parent();" on a Class that has no Super Class, without throwing any errors...
 		Object.getOwnPropertyNames( prototype ).forEach( function( key ) {
 // skip non-methods and already processed properties
-			key in processed || !is_fun( this[key] ) || add.call( this, key, util.describe( make_method( this[key], desc_default_super ), 'cw' ) );
+			 key in processed    || key in internal_method_names ||
+			!is_fun( this[key] ) || add.call( this, key, util.describe( make_method( 'parent', this[key], desc_default_super, key ), 'cw' ) );
 		}, prototype );
 
-		util.def(  prototype, __type__, class_config.type, 'w', true );
-		util.defs( prototype, {
-			mixins : { value : util.obj() },
-			parent : desc_default_super
-		}, 'w', true );
+		util.def( prototype, __type__,   class_config.type,  'w', true )
+			.def( prototype, 'override', desc_default_super, 'w', true )
+			.def( prototype, 'parent',   desc_default_super, 'w', true );
 
 		return prototype;
 	}
@@ -156,13 +241,13 @@ util.def( __lib__, 'Class', function() {
 		return instance;
 	}
 
-	var __chain__          = '__chain__',
-		default_prop_names = 'chain constructor extend singleton type'.split( ' ' ).reduce( to_obj, util.obj() ),
-		desc_class_type    =  util.describe( 'class', 'r' ),
-		desc_default_super =  util.describe( make_method( util.noop, util.describe( util.noop, 'cw' ), 'parent' ), 'cw' ),
-		desc_false         =  util.describe( false,   'w' ),
-		desc_true          =  util.describe( true,    'w' );//,
-//		empty_batch        = { after : [], before : [] };
+	var __chain__             = '__chain__',
+		default_prop_names    = 'afterdefine beforeinstance chain constructor extend singleton type'.split( ' ' ).reduce( to_obj, util.obj() ),
+		desc_class_type       =  util.describe( 'class', 'r' ),
+		desc_default_super    =  util.describe( make_method( 'parent', util.noop, util.describe( util.noop, 'cw' ), 'parent' ), 'cw' ),
+		desc_false            =  util.describe( false,   'w' ),
+		desc_true             =  util.describe( true,    'w' ),
+		internal_method_names = 'mixin override parent'.split( ' ' ).reduce( to_obj, util.obj() );
 
 	return Class;
 }(), 'w' );

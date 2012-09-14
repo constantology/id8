@@ -1,7 +1,7 @@
 util.def( __lib__, 'define', function() {
 // public methods
 	function define( class_path, descriptor ) {
-		var Package, Class, ClassName,
+		var Package, Class, ClassName, Constructor,
 			class_config = extract_default_properties( descriptor, default_prop_names ),
 			class_name;
 
@@ -11,17 +11,25 @@ util.def( __lib__, 'define', function() {
 			delete descriptor.classname;
 		}
 
-		class_name = class_path.replace( re_invalid_chars, '' );
-		class_path = class_path.split( '.' );
+		class_name  = class_path.replace( re_invalid_chars, '' );
+		class_path  = class_path.split( '.' );
 		class_config.type || ( class_config.type = class_name.toLowerCase().split( '.' ).join( '-' ) );
 
-		Class      = __lib__.Class( class_config );
-		ClassName  = class_path.pop();
-		Package    = util.bless( class_path, descriptor.module );
+		ClassName   = class_path.pop();
+		Package     = util.bless( class_path, descriptor.module );
 
-		decorate( class_config.singleton ? Class.constructor : Class, class_name );
+		if ( !class_config.extend && __lib__.Source )
+			class_config.extend = __lib__.Source;
 
-		return Package[ClassName] = Class;
+		Class       = Package[ClassName] = __lib__.Class( class_config );
+
+		Constructor = class_config.singleton ? Class.constructor : Class;
+
+		decorate( Constructor, class_name );
+
+		process_after( Constructor );
+
+		return Class;
 	}
 
 	function decorate( Class, class_name ) {
@@ -29,7 +37,7 @@ util.def( __lib__, 'define', function() {
 		return register( Class );
 	}
 
-	var default_prop_names = 'after before mixins module'.split( ' ' ).reduce( to_obj, util.obj() );
+	var default_prop_names = 'module'.split( ' ' ).reduce( to_obj, util.obj() );
 
 	return define;
 }(), 'w' );

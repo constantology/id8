@@ -1,17 +1,21 @@
 __lib__.define( namespace( 'Hash' ), function() {
-	var ID = '__hashid__', cache = [];
+	var ID = __guid__, cache = util.obj();
 
 	return {
 		constructor : function Hash( o ) {
-			util.def( this, ID, util.describe( cache.push( util.obj() ) - 1, 'w' ) );
+			util.def( this, ID, util.guid(), 'r', true );
+
+			cache[this[ID]] = util.obj();
+
 			!is_obj( o ) || this.set( o );
 		},
+		extend      : Object,
 		module      : __lib__,
-
+// public properties
 		keys        : { get : function() { return Object.keys( cache[this[ID]] ); } },
 		length      : { get : function() { return this.keys.length; } },
 		values      : { get : function() { return Object.values( cache[this[ID]] ); } },
-
+// public methods
 		aggregate   : function( val, fn, ctx ) {
 			var H = this, o = cache[this[ID]]; ctx || ( ctx = H );
 			return Object.keys( o ).reduce( function( res, k, i ) { return fn.call( ctx, res, o[k], k, H, i ); }, val );
