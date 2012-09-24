@@ -14,3 +14,15 @@
 // extend Function and Object natives with id8's extensions if not sandboxed
 // or sandboxed environment's natives with all m8 AND id8 extensions
 	util.x( Object, Array, Boolean, Function );
+/*
+
+// todo: delete this before pushing!
+	;!function( loc ) {
+		var href = loc.href;
+		!( !!~href.indexOf( '.local' ) || !!~href.indexOf( '/test' ) )
+		|| util.def( __lib__, 'registered', { value : {
+				path : registered_path,
+				type : registered_type
+			} }, 'r' );
+	}( util.global.location || { href : '' } );
+*/

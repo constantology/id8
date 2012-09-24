@@ -25,19 +25,19 @@ util.def( __lib__, 'define', function() {
 
 		Constructor = class_config.singleton ? Class.constructor : Class;
 
-		decorate( Constructor, class_name );
+		decorate( Constructor, class_name, descriptor.noreg === true );
 
 		process_after( Constructor );
 
 		return Class;
 	}
 
-	function decorate( Class, class_name ) {
+	function decorate( Class, class_name, no_register ) {
 		!class_name || util.def( Class, __classname__, class_name, 'cw', true );
-		return register( Class );
+		return no_register ? Class : register( Class );
 	}
 
-	var default_prop_names = 'module'.split( ' ' ).reduce( to_obj, util.obj() );
+	var default_prop_names = 'module noreg'.split( ' ' ).reduce( to_obj, util.obj() );
 
 	return define;
 }(), 'w' );

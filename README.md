@@ -1,4 +1,5 @@
-# id8.js
+# id8.js [![build status](https://secure.travis-ci.org/constantology/id8.png)](http://travis-ci.org/constantology/id8)
+
 **id8** can be pronounced in one of two ways:
 
 **ideate |ˈīdēˌāt|**

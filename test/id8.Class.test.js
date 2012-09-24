@@ -1,4 +1,4 @@
-typeof id8  !== 'undefined' || ( id8  = require( 'id8' ) );
+typeof id8  !== 'undefined' || ( id8  = require( '../id8' ) );
 typeof chai !== 'undefined' || ( chai = require( 'chai' ) );
 
 m8     = id8.m8;
@@ -215,13 +215,13 @@ suite( 'id8.Class', function() {
 		var called_getNum = false, called_setNum = false;
 		Class_02.override( 'getNum', function() {
 			called_getNum = true;
-			return this.override();
+			return this.original();
 		} );
 		Class_02.override( {
 			setNum : function( num ) {
 				called_setNum = true;
 				num += 100;
-				return this.override( arguments );
+				return this.original( arguments );
 			}
 		} );
 

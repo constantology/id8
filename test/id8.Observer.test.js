@@ -1,4 +1,4 @@
-typeof id8  !== 'undefined' || ( id8  = require( 'id8' ) );
+typeof id8  !== 'undefined' || ( id8  = require( '../id8' ) );
 typeof chai !== 'undefined' || ( chai = require( 'chai' ) );
 
 m8     = id8.m8;

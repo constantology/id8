@@ -85,7 +85,8 @@ __lib__.define( namespace( 'Source' ), function() {
 
 	return {
 		constructor    : function Source( config ) {
-			this.applyConfig( this.initConfig( config ) ).onInitialize();
+			this.applyConfig( this.initConfig( config ) );
+			this.autoInit === false || this.init();
 		},
 		afterdefine    : afterdefine,
 		module         : __lib__,
@@ -105,6 +106,6 @@ __lib__.define( namespace( 'Source' ), function() {
 
 			return this[__config__];
 		},
-		onInitialize : function() {}
+		init         : function() {}
 	};
 }() );

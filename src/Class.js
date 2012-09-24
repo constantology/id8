@@ -39,7 +39,7 @@ util.def( __lib__, 'Class', function() {
 				!util.has( method, name ) || override.call( this, name, method[name] );
 		}
 		else if ( is_fun( method ) )
-			proto[name] = make_method( 'override', method, get_method_descriptor( proto, name ), name );
+			proto[name] = make_method( 'original', method, get_method_descriptor( proto, name ), name );
 
 		return this;
 	}
@@ -111,7 +111,7 @@ util.def( __lib__, 'Class', function() {
 			Constructor = make_method( 'parent', ctor, desc_super, 'constructor' );
 
 		prototype.constructor = Class;
-		prototype.override    = desc_default_super.value;
+		prototype.original    = desc_default_super.value;
 		prototype.parent      = desc_default_super.value;
 
 		util.def( Class, __guid__,   util.guid(), 'r', true )
@@ -174,7 +174,7 @@ util.def( __lib__, 'Class', function() {
 			var desc             = get_method_descriptor( this, super_name ),
 				previous_method  = this[__method__],
 				return_value,
-				no_update_method = ( previous_method in internal_method_names || method_name in internal_method_names );
+				no_update_method = util.got( internal_method_names, previous_method, method_name );
 
 			set_super_method( this, super_name, desc_super );
 
@@ -227,7 +227,7 @@ util.def( __lib__, 'Class', function() {
 		}, prototype );
 
 		util.def( prototype, __type__,   class_config.type,  'w', true )
-			.def( prototype, 'override', desc_default_super, 'w', true )
+			.def( prototype, 'original', desc_default_super, 'w', true )
 			.def( prototype, 'parent',   desc_default_super, 'w', true );
 
 		return prototype;
@@ -247,7 +247,7 @@ util.def( __lib__, 'Class', function() {
 		desc_default_super    =  util.describe( make_method( 'parent', util.noop, util.describe( util.noop, 'cw' ), 'parent' ), 'cw' ),
 		desc_false            =  util.describe( false,   'w' ),
 		desc_true             =  util.describe( true,    'w' ),
-		internal_method_names = 'mixin override parent'.split( ' ' ).reduce( to_obj, util.obj() );
+		internal_method_names = 'mixin original parent'.split( ' ' ).reduce( to_obj, util.obj() );
 
 	return Class;
 }(), 'w' );

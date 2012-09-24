@@ -1,6 +1,6 @@
 	var __classname__    = '__classname__',
 		__config__       = '__config__',
-		__guid__         = '__guid__',
+		__guid__         = '__guid8__',
 		__method__       = '__method__',
 		__mixins__       = '__mixins__',
 		__name__         = '__name__',

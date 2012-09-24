@@ -28,7 +28,7 @@ __lib__.define( namespace( 'Callback' ), function() {
 
 			this.enable();
 		},
-		chain       : true,
+		extend      : Object,
 		module      : __lib__,
 // properties
 		buffer      : null,

@@ -105,7 +105,7 @@
 /*~  id8/src/vars.js  ~*/
 	var __classname__    = '__classname__',
 		__config__       = '__config__',
-		__guid__         = '__guid__',
+		__guid__         = '__guid8__',
 		__method__       = '__method__',
 		__mixins__       = '__mixins__',
 		__name__         = '__name__',
@@ -149,19 +149,19 @@ util.def( __lib__, 'define', function() {
 
 		Constructor = class_config.singleton ? Class.constructor : Class;
 
-		decorate( Constructor, class_name );
+		decorate( Constructor, class_name, descriptor.noreg === true );
 
 		process_after( Constructor );
 
 		return Class;
 	}
 
-	function decorate( Class, class_name ) {
+	function decorate( Class, class_name, no_register ) {
 		!class_name || util.def( Class, __classname__, class_name, 'cw', true );
-		return register( Class );
+		return no_register ? Class : register( Class );
 	}
 
-	var default_prop_names = 'module'.split( ' ' ).reduce( to_obj, util.obj() );
+	var default_prop_names = 'module noreg'.split( ' ' ).reduce( to_obj, util.obj() );
 
 	return define;
 }(), 'w' );
@@ -208,7 +208,7 @@ util.def( __lib__, 'Class', function() {
 				!util.has( method, name ) || override.call( this, name, method[name] );
 		}
 		else if ( is_fun( method ) )
-			proto[name] = make_method( 'override', method, get_method_descriptor( proto, name ), name );
+			proto[name] = make_method( 'original', method, get_method_descriptor( proto, name ), name );
 
 		return this;
 	}
@@ -280,7 +280,7 @@ util.def( __lib__, 'Class', function() {
 			Constructor = make_method( 'parent', ctor, desc_super, 'constructor' );
 
 		prototype.constructor = Class;
-		prototype.override    = desc_default_super.value;
+		prototype.original    = desc_default_super.value;
 		prototype.parent      = desc_default_super.value;
 
 		util.def( Class, __guid__,   util.guid(), 'r', true )
@@ -343,7 +343,7 @@ util.def( __lib__, 'Class', function() {
 			var desc             = get_method_descriptor( this, super_name ),
 				previous_method  = this[__method__],
 				return_value,
-				no_update_method = ( previous_method in internal_method_names || method_name in internal_method_names );
+				no_update_method = util.got( internal_method_names, previous_method, method_name );
 
 			set_super_method( this, super_name, desc_super );
 
@@ -396,7 +396,7 @@ util.def( __lib__, 'Class', function() {
 		}, prototype );
 
 		util.def( prototype, __type__,   class_config.type,  'w', true )
-			.def( prototype, 'override', desc_default_super, 'w', true )
+			.def( prototype, 'original', desc_default_super, 'w', true )
 			.def( prototype, 'parent',   desc_default_super, 'w', true );
 
 		return prototype;
@@ -416,7 +416,7 @@ util.def( __lib__, 'Class', function() {
 		desc_default_super    =  util.describe( make_method( 'parent', util.noop, util.describe( util.noop, 'cw' ), 'parent' ), 'cw' ),
 		desc_false            =  util.describe( false,   'w' ),
 		desc_true             =  util.describe( true,    'w' ),
-		internal_method_names = 'mixin override parent'.split( ' ' ).reduce( to_obj, util.obj() );
+		internal_method_names = 'mixin original parent'.split( ' ' ).reduce( to_obj, util.obj() );
 
 	return Class;
 }(), 'w' );
@@ -509,7 +509,8 @@ __lib__.define( namespace( 'Source' ), function() {
 
 	return {
 		constructor    : function Source( config ) {
-			this.applyConfig( this.initConfig( config ) ).onInitialize();
+			this.applyConfig( this.initConfig( config ) );
+			this.autoInit === false || this.init();
 		},
 		afterdefine    : afterdefine,
 		module         : __lib__,
@@ -529,7 +530,7 @@ __lib__.define( namespace( 'Source' ), function() {
 
 			return this[__config__];
 		},
-		onInitialize : function() {}
+		init         : function() {}
 	};
 }() );
 
@@ -564,7 +565,7 @@ __lib__.define( namespace( 'Callback' ), function() {
 
 			this.enable();
 		},
-		chain       : true,
+		extend      : Object,
 		module      : __lib__,
 // properties
 		buffer      : null,
@@ -950,6 +951,18 @@ __lib__.define( namespace( 'Observer' ), function() {
 // extend Function and Object natives with id8's extensions if not sandboxed
 // or sandboxed environment's natives with all m8 AND id8 extensions
 	util.x( Object, Array, Boolean, Function );
+/*
+
+// todo: delete this before pushing!
+	;!function( loc ) {
+		var href = loc.href;
+		!( !!~href.indexOf( '.local' ) || !!~href.indexOf( '/test' ) )
+		|| util.def( __lib__, 'registered', { value : {
+				path : registered_path,
+				type : registered_type
+			} }, 'r' );
+	}( util.global.location || { href : '' } );
+*/
 
 // at this point we don't know if m8 is available or not, and as such do not know what environment we are in.
 // so, we check and do what is required.
