@@ -3,7 +3,7 @@ util.def( __lib__, 'define', function() {
 	function define( class_path, descriptor ) {
 		var Package, Class, ClassName, Constructor,
 			class_config = extract_default_properties( descriptor, default_prop_names ),
-			class_name;
+			class_name, type_name;
 
 		if ( is_obj( class_path ) ) {
 			descriptor = class_path;
@@ -12,8 +12,8 @@ util.def( __lib__, 'define', function() {
 		}
 
 		class_name  = class_path.replace( re_invalid_chars, '' );
+		type_name   = class_name.toLowerCase().split( '.' ).join( '-' );
 		class_path  = class_path.split( '.' );
-		class_config.type || ( class_config.type = class_name.toLowerCase().split( '.' ).join( '-' ) );
 
 		ClassName   = class_path.pop();
 		Package     = util.bless( class_path, descriptor.module );
@@ -25,7 +25,13 @@ util.def( __lib__, 'define', function() {
 
 		Constructor = class_config.singleton ? Class.constructor : Class;
 
+		util.def( Constructor.prototype, __type__, type_name, 'c', true );
 		decorate( Constructor, class_name, descriptor.noreg === true );
+
+		  !descriptor.alias
+		|| descriptor.alias.split( ' ' ).map( function( alias ) {
+			registered_alias[alias] = this;
+		}, Constructor );
 
 		process_after( Constructor );
 
@@ -37,7 +43,7 @@ util.def( __lib__, 'define', function() {
 		return no_register ? Class : register( Class );
 	}
 
-	var default_prop_names = 'module noreg'.split( ' ' ).reduce( to_obj, util.obj() );
+	var default_prop_names = 'alias module noreg'.split( ' ' ).reduce( to_obj, util.obj() );
 
 	return define;
 }(), 'w' );

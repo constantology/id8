@@ -1,18 +1,20 @@
 __lib__.define( namespace( 'Source' ), function() {
 	function afterdefine( Class  ) {
-		var mixins = Class.prototype.mixins || util.obj(), name;
+		var mixins = Class.prototype.mixins;
 
+// if you don't know why you don't want an Object on a prototype, then you should definitely find out.
+// Hint: Prototypical inheritance and Objects passed as references not copies...
 		delete Class.prototype.mixins;
 
 		decorate( Class ).mixin( mixins );
 
-		mixins = Class[__super__][__mixins__];
+		return is_obj( mixins = Class[__super__][__mixins__] )
+			 ? Class.mixin( mixins )
+			 : Class;
+	}
 
-		if ( is_obj( mixins ) && util.len( mixins ) )
-			for ( name in mixins )
-				!util.has( mixins, name ) || util.got( Class.mixins, name ) || Class.mixin( name, mixins[name] );
-
-		return Class;
+	function beforeinstance( Class, instance ) {
+		instance.$mx = Class[__mixins__];
 	}
 
 	function decorate( Class ) {
@@ -30,7 +32,9 @@ __lib__.define( namespace( 'Source' ), function() {
 	}
 
 	function mixin_apply( Class, mixin, name ) {
-		//noinspection FallthroughInSwitchStatementJS
+		if ( util.got( Class[__mixins__], name ) )
+			return Class; //noinspection FallthroughInSwitchStatementJS
+
 		switch ( util.nativeType( mixin ) ) {
 			case 'object'   :                                  break;
 			case 'string'   : if ( !( mixin = get( mixin ) ) ) break; // allowing fall-through if a Class is found,
@@ -46,6 +50,7 @@ __lib__.define( namespace( 'Source' ), function() {
 
 			util.def( Class[__mixins__], get_name( name ), { value : mixin }, 'e', true );
 		}
+
 		return Class;
 	}
 
@@ -76,7 +81,7 @@ __lib__.define( namespace( 'Source' ), function() {
 				this.mixin( name, args );
 			}, this );
 
-			return;
+			return this;
 		}
 
 		if ( mx[name] && is_fun( mx[name][method] ) )
@@ -89,6 +94,7 @@ __lib__.define( namespace( 'Source' ), function() {
 			this.autoInit === false || this.init();
 		},
 		afterdefine    : afterdefine,
+		beforeinstance : beforeinstance,
 		module         : __lib__,
 // public properties
 		mixins         : null,
@@ -106,6 +112,6 @@ __lib__.define( namespace( 'Source' ), function() {
 
 			return this[__config__];
 		},
-		init         : function() {}
+		init         : util.noop
 	};
 }() );

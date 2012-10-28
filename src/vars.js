@@ -10,7 +10,8 @@
 		Name_lc          = Name.toLowerCase(), U,
 		anon_list        = Function.anon_list,
 		internals        = util.obj(),
-		re_invalid_chars = /[^A-Za-z0-9_\.]/g,
+		re_invalid_chars = /[^A-Za-z0-9_\.$<>\[\]\{\}]/g,
+		registered_alias = util.obj(),
 		registered_path  = util.obj(),
 		registered_type  = util.obj();
 

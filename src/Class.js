@@ -114,9 +114,9 @@ util.def( __lib__, 'Class', function() {
 		prototype.original    = desc_default_super.value;
 		prototype.parent      = desc_default_super.value;
 
-		util.def( Class, __guid__,   util.guid(), 'r', true )
-			.def( Class, __super__,  desc_super,       true )
-			.def( prototype,         __chain__,  desc_chain,       true );
+		util.def( Class,     __guid__,  util.guid(), 'r', true )
+			.def( Class,     __super__, desc_super,       true )
+			.def( prototype, __chain__, desc_chain,       true );
 
 		make_processable( Class, config );
 
@@ -142,7 +142,7 @@ util.def( __lib__, 'Class', function() {
 		( is_fun( ctor ) && ctor !== Object ) || ( ctor = super_class.valueOf() );
 
 // set a type for this Class' instances if one is not defined
-		is_str( class_config.type )
+		util.exists( class_config.type )
 		|| ctor === Object
 		|| util.got( anon_list, ( name = String( ctor[__name__] ) ) )
 		|| ( class_config.type = name.toLowerCase() );
@@ -154,9 +154,7 @@ util.def( __lib__, 'Class', function() {
 	}
 
 	function make_method( super_name, method, desc_super, method_name ) {
-		var super_method = null;
-
-		//noinspection FallthroughInSwitchStatementJS
+		var super_method = null;                                                // noinspection FallthroughInSwitchStatementJS
 		switch ( util.nativeType( desc_super ) ) {
 			case 'function' : desc_super   = util.describe( desc_super, 'cw' ); // allow fall-through
 			case 'object'   : super_method = desc_super.value; break;
@@ -226,8 +224,9 @@ util.def( __lib__, 'Class', function() {
 			!is_fun( this[key] ) || add.call( this, key, util.describe( make_method( 'parent', this[key], desc_default_super, key ), 'cw' ) );
 		}, prototype );
 
-		util.def( prototype, __type__,   class_config.type,  'w', true )
-			.def( prototype, 'original', desc_default_super, 'w', true )
+		!is_str( class_config.type ) || util.def( prototype, __type__, class_config.type, 'c', true );
+
+		util.def( prototype, 'original', desc_default_super, 'w', true )
 			.def( prototype, 'parent',   desc_default_super, 'w', true );
 
 		return prototype;

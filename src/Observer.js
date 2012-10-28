@@ -102,7 +102,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 		if ( event == 'ctx' || event == 'options' )
 			return observer;
 
-		var ctx, fn, options, type= util.type( listener );
+		var ctx, fn, options, type = util.type( listener );
 
 		switch ( type ) {
 			case type_callback :

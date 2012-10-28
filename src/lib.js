@@ -28,6 +28,8 @@
 					return registered_path[name_or_type];
 				if ( name_or_type in registered_type )
 					return registered_type[name_or_type];
+				if ( name_or_type in registered_alias )
+					return registered_alias[name_or_type];
 
 				var path = name_or_type.replace( re_invalid_chars, '' ),
 					type = name_or_type.toLowerCase();
@@ -79,7 +81,7 @@
 		if ( name in anon_list )
 			throw new Error( Name + '.register: Unable to register Class without ' + __classname__ + ' property.' );
 
-		type || util.def( Class.prototype, __type__, ( type = name.toLowerCase().split( '.' ).join( '-' ) ), 'r', true );
+		type || util.def( Class.prototype, __type__, ( type = name.toLowerCase().split( '.' ).join( '-' ) ), 'c', true );
 
 		if ( name in registered_path || type in registered_type )
 			throw new Error( Name + '.register: Unable to register Class. A Class called: ' + name + ', with type: ' + type + ' already exists.' );
