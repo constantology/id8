@@ -136,7 +136,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 		constructor        : function Observer( observers ) {
 			this.listeners = __lib__( 'Hash' );
 
-			!is_obj( observers ) || this.observe( observers );
+			!is_obj( observers ) || this.observe( is_obj( observers.observers ) ? observers.observers : observers );
 		},
 		extend             : Object,
 		module             : __lib__,
@@ -217,16 +217,23 @@ __lib__.define( namespace( 'Observer' ), function() {
 
 				default            : switch( type ) {
 					case 'object'     :
-					case 'nullobject' : if ( util.has( fn, 'handleEvent' ) ) {
-						if ( is_obj( ctx ) && options === U )
-							options = ctx;
-						ctx = fn;
-						fn  = handleEvent( fn );
-					}      break;
+					case 'nullobject' :
+						if ( util.has( fn, 'handleEvent' ) ) {
+							if ( is_obj( ctx ) && options === U )
+								options = ctx;
+							ctx = fn;
+							fn  = handleEvent( fn );
+						}
+						break;
 
-					case 'string'     : if ( is_obj( ctx ) ) {
-						fn = ctx[fn];
-					}      break;
+					case 'string'     :
+						if ( is_obj( ctx ) )
+							fn  = ctx[fn];
+						else if ( is_fun( this[fn] ) ) {
+							fn  = this[fn];
+							ctx = this;
+						}
+						break;
 				}
 				queue.push( createCallback( fn, createCallbackConfig( options, ctx || this ) ) );
 			}

@@ -47,7 +47,7 @@ util.def( __lib__, 'Class', function() {
 	function singleton( Constructor ) { return !Constructor ? null : Constructor[__singleton__] || null; }
 
 // Class instance method helpers
-	function get_args( args ) { return util.tostr( args[0] ) === '[object Arguments]' ? args[0] : args; }
+	function get_args( args ) { return util.tostr( args[0] ) === '[object Arguments]' ? get_args( args[0] ) : args; }
 
 	function get_method_descriptor( o, k ) {
 		var desc = Object.getOwnPropertyDescriptor( o, k )
