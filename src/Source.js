@@ -33,9 +33,10 @@ __lib__.define( namespace( 'Source' ), function() {
 
 	function mixin_apply( Class, mixin, name ) {
 		if ( util.got( Class[__mixins__], name ) )
-			return Class; //noinspection FallthroughInSwitchStatementJS
+			return Class;
 
-		switch ( util.nativeType( mixin ) ) {
+		//noinspection FallthroughInSwitchStatementJS
+		switch ( util.ntype( mixin ) ) {
 			case 'object'   :                                  break;
 			case 'string'   : if ( !( mixin = get( mixin ) ) ) break; // allowing fall-through if a Class is found,
 			case 'function' : mixin = mixin.prototype;         break; // otherwise break out baby!!!
@@ -45,7 +46,7 @@ __lib__.define( namespace( 'Source' ), function() {
  // Since this is a mixin and not a super class we only want to add properties/methods that do not already exist to the Class
  // The rest can be called within the existing method as this.mixin( mixin_name, arguments );
 			Object.getOwnPropertyNames( mixin ).map( function( property ) {
-				util.has( this, property ) || Class.add( property, mixin[property] );
+				property in reserved_props || util.has( this, property ) || Class.add( property, util.description( mixin, property ) );
 			}, Class.prototype );
 
 			util.def( Class[__mixins__], get_name( name ), { value : mixin }, 'e', true );
@@ -55,7 +56,7 @@ __lib__.define( namespace( 'Source' ), function() {
 	}
 
 	function mixins_apply( mixins ) {
-		switch ( util.nativeType( mixins ) ) {
+		switch ( util.ntype( mixins ) ) {
 			case 'object'   : Object.reduce( mixins, mixin_apply, this );                                         break;
 			case 'string'   : mixin_apply( this, mixins, get_name( mixins ) );                                    break;
 			case 'function' : mixin_apply( this, mixins, get_name( mixins[__classname__] || mixins[__name__] ) ); break;

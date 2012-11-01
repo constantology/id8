@@ -41,7 +41,7 @@ __lib__.define( namespace( 'Hash' ), function() {
 		},
 		remove      : function( k ) { return util.has( cache[this[ID]], k ) ? ( delete cache[this[ID]][k] ) : false; },
 		set         : function( o, v ) {
-			switch ( util.nativeType( o ) ) {
+			switch ( util.ntype( o ) ) {
 				case 'object' : Object.keys( o ).forEach( function( k ) { this.set( k, o[k] ); }, this ); break;
 				default       : cache[this[ID]][o] = v;
 			}

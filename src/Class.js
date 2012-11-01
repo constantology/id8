@@ -68,8 +68,8 @@ util.def( __lib__, 'Class', function() {
 // Class construction methods
 	function add( key, value ) {
 		var desc;
-		switch ( util.nativeType( value ) ) {
-			case 'object'   : desc = util.got( value, 'value', 'get', 'set' ) ? value : util.describe( { value : value }, 'cw' );    break;
+		switch ( util.ntype( value ) ) {
+			case 'object'   : desc = util.type( value ) == 'descriptor' ? value : util.describe( { value : value }, 'cw' );          break;
 			case 'function' : desc = util.describe( make_method( 'parent', value, get_method_descriptor( this, key ), key ), 'cw' ); break;
 			default         : desc = util.describe( value, 'cew' );
 		}
@@ -155,7 +155,7 @@ util.def( __lib__, 'Class', function() {
 
 	function make_method( super_name, method, desc_super, method_name ) {
 		var super_method = null;                                                // noinspection FallthroughInSwitchStatementJS
-		switch ( util.nativeType( desc_super ) ) {
+		switch ( util.ntype( desc_super ) ) {
 			case 'function' : desc_super   = util.describe( desc_super, 'cw' ); // allow fall-through
 			case 'object'   : super_method = desc_super.value; break;
 		}
@@ -240,8 +240,7 @@ util.def( __lib__, 'Class', function() {
 		return instance;
 	}
 
-	var __chain__             = '__chain__',
-		default_prop_names    = 'afterdefine beforeinstance chain constructor extend singleton type'.split( ' ' ).reduce( to_obj, util.obj() ),
+	var default_prop_names    = 'afterdefine beforeinstance chain constructor extend singleton type'.split( ' ' ).reduce( to_obj, util.obj() ),
 		desc_class_type       =  util.describe( 'class', 'r' ),
 		desc_default_super    =  util.describe( make_method( 'parent', util.noop, util.describe( util.noop, 'cw' ), 'parent' ), 'cw' ),
 		desc_false            =  util.describe( false,   'w' ),

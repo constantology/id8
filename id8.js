@@ -24,7 +24,7 @@
 	}
 
 	function get( name_or_type ) {
-		switch ( util.nativeType( name_or_type ) ) {
+		switch ( util.ntype( name_or_type ) ) {
 			case 'function' :
 			case 'object'   : return name_or_type;
 			case 'string'   :
@@ -54,7 +54,7 @@
 	}
 
 	function is_fun( item ) { return typeof item == 'function'; }
-	function is_obj( item ) { return util.nativeType( item ) == 'object'; }
+	function is_obj( item ) { return util.ntype( item ) == 'object'; }
 	function is_str( item ) { return typeof item == 'string'; }
 
 	function namespace( name ) { return '^' + Name + '.' + name; }
@@ -105,7 +105,8 @@
 	}
 
 /*~  src/vars.js  ~*/
-	var __classname__    = '__classname__',
+	var __chain__        = '__chain__',
+		__classname__    = '__classname__',
 		__config__       = '__config__',
 		__guid__         = '__guid8__',
 		__method__       = '__method__',
@@ -120,9 +121,12 @@
 		re_invalid_chars = /[^A-Za-z0-9_\.$<>\[\]\{\}]/g,
 		registered_alias = util.obj(),
 		registered_path  = util.obj(),
-		registered_type  = util.obj();
+		registered_type  = util.obj(),
+		reserved_props   = [__chain__, __config__, __method__, __type__, 'mixin', 'original', 'parent'].reduce( to_obj, util.obj() );
 
 	internals.empty = { after : null, before : null, mixins : null };
+
+
 
 /*~  src/lib.define.js  ~*/
 util.def( __lib__, 'define', function() {
@@ -246,8 +250,8 @@ util.def( __lib__, 'Class', function() {
 // Class construction methods
 	function add( key, value ) {
 		var desc;
-		switch ( util.nativeType( value ) ) {
-			case 'object'   : desc = util.got( value, 'value', 'get', 'set' ) ? value : util.describe( { value : value }, 'cw' );    break;
+		switch ( util.ntype( value ) ) {
+			case 'object'   : desc = util.type( value ) == 'descriptor' ? value : util.describe( { value : value }, 'cw' );          break;
 			case 'function' : desc = util.describe( make_method( 'parent', value, get_method_descriptor( this, key ), key ), 'cw' ); break;
 			default         : desc = util.describe( value, 'cew' );
 		}
@@ -333,7 +337,7 @@ util.def( __lib__, 'Class', function() {
 
 	function make_method( super_name, method, desc_super, method_name ) {
 		var super_method = null;                                                // noinspection FallthroughInSwitchStatementJS
-		switch ( util.nativeType( desc_super ) ) {
+		switch ( util.ntype( desc_super ) ) {
 			case 'function' : desc_super   = util.describe( desc_super, 'cw' ); // allow fall-through
 			case 'object'   : super_method = desc_super.value; break;
 		}
@@ -418,8 +422,7 @@ util.def( __lib__, 'Class', function() {
 		return instance;
 	}
 
-	var __chain__             = '__chain__',
-		default_prop_names    = 'afterdefine beforeinstance chain constructor extend singleton type'.split( ' ' ).reduce( to_obj, util.obj() ),
+	var default_prop_names    = 'afterdefine beforeinstance chain constructor extend singleton type'.split( ' ' ).reduce( to_obj, util.obj() ),
 		desc_class_type       =  util.describe( 'class', 'r' ),
 		desc_default_super    =  util.describe( make_method( 'parent', util.noop, util.describe( util.noop, 'cw' ), 'parent' ), 'cw' ),
 		desc_false            =  util.describe( false,   'w' ),
@@ -465,9 +468,10 @@ __lib__.define( namespace( 'Source' ), function() {
 
 	function mixin_apply( Class, mixin, name ) {
 		if ( util.got( Class[__mixins__], name ) )
-			return Class; //noinspection FallthroughInSwitchStatementJS
+			return Class;
 
-		switch ( util.nativeType( mixin ) ) {
+		//noinspection FallthroughInSwitchStatementJS
+		switch ( util.ntype( mixin ) ) {
 			case 'object'   :                                  break;
 			case 'string'   : if ( !( mixin = get( mixin ) ) ) break; // allowing fall-through if a Class is found,
 			case 'function' : mixin = mixin.prototype;         break; // otherwise break out baby!!!
@@ -477,7 +481,7 @@ __lib__.define( namespace( 'Source' ), function() {
  // Since this is a mixin and not a super class we only want to add properties/methods that do not already exist to the Class
  // The rest can be called within the existing method as this.mixin( mixin_name, arguments );
 			Object.getOwnPropertyNames( mixin ).map( function( property ) {
-				util.has( this, property ) || Class.add( property, mixin[property] );
+				property in reserved_props || util.has( this, property ) || Class.add( property, util.description( mixin, property ) );
 			}, Class.prototype );
 
 			util.def( Class[__mixins__], get_name( name ), { value : mixin }, 'e', true );
@@ -487,7 +491,7 @@ __lib__.define( namespace( 'Source' ), function() {
 	}
 
 	function mixins_apply( mixins ) {
-		switch ( util.nativeType( mixins ) ) {
+		switch ( util.ntype( mixins ) ) {
 			case 'object'   : Object.reduce( mixins, mixin_apply, this );                                         break;
 			case 'string'   : mixin_apply( this, mixins, get_name( mixins ) );                                    break;
 			case 'function' : mixin_apply( this, mixins, get_name( mixins[__classname__] || mixins[__name__] ) ); break;
@@ -664,7 +668,7 @@ __lib__.define( namespace( 'Hash' ), function() {
 		},
 		remove      : function( k ) { return util.has( cache[this[ID]], k ) ? ( delete cache[this[ID]][k] ) : false; },
 		set         : function( o, v ) {
-			switch ( util.nativeType( o ) ) {
+			switch ( util.ntype( o ) ) {
 				case 'object' : Object.keys( o ).forEach( function( k ) { this.set( k, o[k] ); }, this ); break;
 				default       : cache[this[ID]][o] = v;
 			}
@@ -695,7 +699,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 	}
 
 	function createCallbackConfig( config, ctx ) {
-		switch( util.nativeType( config ) ) {
+		switch( util.ntype( config ) ) {
 			case 'boolean' : config = { times : !!config ? 1 : 0 };     break;
 			case 'number'  : config = { delay :   config };             break;
 			case 'object'  : config = util.merge( util.obj(), config ); break;

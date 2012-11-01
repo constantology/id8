@@ -20,7 +20,7 @@
 	}
 
 	function get( name_or_type ) {
-		switch ( util.nativeType( name_or_type ) ) {
+		switch ( util.ntype( name_or_type ) ) {
 			case 'function' :
 			case 'object'   : return name_or_type;
 			case 'string'   :
@@ -50,7 +50,7 @@
 	}
 
 	function is_fun( item ) { return typeof item == 'function'; }
-	function is_obj( item ) { return util.nativeType( item ) == 'object'; }
+	function is_obj( item ) { return util.ntype( item ) == 'object'; }
 	function is_str( item ) { return typeof item == 'string'; }
 
 	function namespace( name ) { return '^' + Name + '.' + name; }

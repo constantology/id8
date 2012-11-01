@@ -82,7 +82,7 @@ suite( 'id8.Source', function() {
 			constructor  : function MixinTest_01() {
 				this.parent( arguments );
 				observer_ctor_called = true;
-				this.mixin( 'observer', [this.observers] );
+				this.mixin( 'observer', arguments );
 			},
 			extend       : 'id8.Source',
 			mixins       : 'id8.Observer',
@@ -90,21 +90,25 @@ suite( 'id8.Source', function() {
 			observe      : function( evt, fn, ctx, opt ) {
 				observer_mixin_called = true;
 
-				expect( evt ).to.equal( 'foo' );
-				expect( fn ).to.equal( m8.noop );
-				expect( ctx ).to.equal( m8.modes );
-				expect( opt ).to.equal( expected_options );
+				if ( typeof evt == 'string' && evt.indexOf( 'event' ) < 0 ) {
+					expect( evt ).to.equal( 'foo' );
+					expect( fn ).to.equal( m8.noop );
+					expect( ctx ).to.equal( m8.modes );
+					expect( opt ).to.equal( expected_options );
+				}
 
 				this.mixin( 'observer', arguments );
 
-				expect( this.listeners.get( 'foo' ) ).to.be.an( 'array' );
-				expect( this.listeners.get( 'foo' ).length ).to.equal( 1 );
+				if ( typeof evt == 'string' && evt.indexOf( 'event' ) < 0 ) {
+					expect( this.listeners.get( 'foo' ) ).to.be.an( 'array' );
+					expect( this.listeners.get( 'foo' ).length ).to.equal( 1 );
 
-				var cb = this.listeners.get( 'foo' )[0];
+					var cb = this.listeners.get( 'foo' )[0];
 
-				expect( cb.fn ).to.equal( m8.noop );
-				expect( cb.ctx ).to.equal( m8.modes );
-				expect( cb.delay ).to.equal( 250 );
+					expect( cb.fn ).to.equal( m8.noop );
+					expect( cb.ctx ).to.equal( m8.modes );
+					expect( cb.delay ).to.equal( 250 );
+				}
 			}
 		} );
 
@@ -142,7 +146,7 @@ suite( 'id8.Source', function() {
 		id8.define( 'MixinTest_02', {
 			extend  : mod.MixinTest_01,
 			mixins  : {
-				foo : 'genericmixin_01',
+				foo : 'GenericMixin_01',
 				bar : mod.GenericMixin_02
 			},
 			module  : mod,

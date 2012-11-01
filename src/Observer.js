@@ -17,7 +17,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 	}
 
 	function createCallbackConfig( config, ctx ) {
-		switch( util.nativeType( config ) ) {
+		switch( util.ntype( config ) ) {
 			case 'boolean' : config = { times : !!config ? 1 : 0 };     break;
 			case 'number'  : config = { delay :   config };             break;
 			case 'object'  : config = util.merge( util.obj(), config ); break;

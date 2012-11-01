@@ -24,7 +24,7 @@ suite( 'id8.Observer', function() {
 			expect( observer ).to.equal( observer );
 			expect( scope ).to.equal( ctx );
 
-			m8.nativeType( done ) != 'function' || done();
+			m8.ntype( done ) != 'function' || done();
 		};
 	}
 
