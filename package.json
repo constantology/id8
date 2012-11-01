@@ -6,7 +6,7 @@
 	},
 	"description"     : "id8 is a small library designed to help you write object-oriented code that is easy to maintain and scale. id8 contains a Class constructor, as well as full-featured Observer, Callback and Hash classes.",
 	"dependencies"    : {
-		"m8"          : ">= 0.2.7"
+		"m8"          : ">= 0.3.1"
 	},
 	"devDependencies" : {
 		"catn8"       : ">= 0.0.2",
@@ -14,7 +14,7 @@
 		"mocha"       : ">= 1.4.2"
 	},
 	"engines"         : {
-		"node"        : ">= 0.4.x"
+		"node"        : ">= 0.8.x"
 	},
 	"keywords"        : ["api", "framework", "object-oriented", "javascript", "library", "programming"],
 	"licenses"        : [ {
