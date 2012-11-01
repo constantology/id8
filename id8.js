@@ -539,14 +539,11 @@ __lib__.define( namespace( 'Source' ), function() {
 // internal methods
 		applyConfig : function( config ) {
 			util.copy( this, config );
-		},
-		initConfig   : function( config ) {
-			if ( !is_obj( config ) )
-				config = util.obj();
 
 			util.def( this, __config__, { value : config }, 'r', true );
-
-			return this[__config__];
+		},
+		initConfig   : function( config ) {
+			return is_obj( config ) ? config : util.obj();
 		},
 		init         : util.noop
 	};
