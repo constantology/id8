@@ -481,7 +481,7 @@ __lib__.define( namespace( 'Source' ), function() {
  // Since this is a mixin and not a super class we only want to add properties/methods that do not already exist to the Class
  // The rest can be called within the existing method as this.mixin( mixin_name, arguments );
 			Object.getOwnPropertyNames( mixin ).map( function( property ) {
-				property in reserved_props || util.has( this, property ) || Class.add( property, util.description( mixin, property ) );
+				property in reserved_props || util.got( this, property ) || Class.add( property, util.description( mixin, property ) );
 			}, Class.prototype );
 
 			util.def( Class[__mixins__], get_name( name ), { value : mixin }, 'e', true );
