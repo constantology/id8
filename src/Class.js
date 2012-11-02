@@ -58,8 +58,6 @@ util.def( __lib__, 'Class', function() {
 		return desc;
 	}
 
-	function get_return_value( ctx, value ) { return ctx[__chain__] === true && value === U ? ctx : value; }
-
 	function set_super_method( ctx, super_name, desc_super ) {
 		util.def( ctx, super_name, desc_super, true );
 		return ctx;

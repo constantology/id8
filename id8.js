@@ -45,6 +45,8 @@
 		return null;
 	}
 
+	function get_return_value( ctx, value ) { return ctx[__chain__] === true && value === UNDEF ? ctx : value; }
+
 	function is( instance, Class ) {
 		switch ( typeof Class ) {
 			case 'function' : return instance instanceof Class;
@@ -115,7 +117,7 @@
 		__singleton__    = '__singleton__',
 		__super__        = '__super__',
 		__type__         = '__type__',
-		Name_lc          = Name.toLowerCase(), U,
+		UNDEF, Name_lc   = Name.toLowerCase(),
 		anon_list        = Function.anon_list,
 		internals        = util.obj(),
 		re_invalid_chars = /[^A-Za-z0-9_\.$<>\[\]\{\}]/g,
@@ -239,8 +241,6 @@ util.def( __lib__, 'Class', function() {
 		desc.writable = true;
 		return desc;
 	}
-
-	function get_return_value( ctx, value ) { return ctx[__chain__] === true && value === U ? ctx : value; }
 
 	function set_super_method( ctx, super_name, desc_super ) {
 		util.def( ctx, super_name, desc_super, true );
@@ -517,11 +517,10 @@ __lib__.define( namespace( 'Source' ), function() {
 				this.mixin( name, args );
 			}, this );
 
-			return this;
+			return get_return_value( this, UNDEF );
 		}
 
-		if ( mx[name] && is_fun( mx[name][method] ) )
-			return mx[name][method].apply( this, args );
+		return get_return_value( this, ( mx[name] && is_fun( mx[name][method] ) ? mx[name][method].apply( this, args ) : UNDEF ) );
 	}
 
 	return {

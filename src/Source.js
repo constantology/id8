@@ -82,11 +82,10 @@ __lib__.define( namespace( 'Source' ), function() {
 				this.mixin( name, args );
 			}, this );
 
-			return this;
+			return get_return_value( this, UNDEF );
 		}
 
-		if ( mx[name] && is_fun( mx[name][method] ) )
-			return mx[name][method].apply( this, args );
+		return get_return_value( this, ( mx[name] && is_fun( mx[name][method] ) ? mx[name][method].apply( this, args ) : UNDEF ) );
 	}
 
 	return {

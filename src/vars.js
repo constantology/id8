@@ -8,7 +8,7 @@
 		__singleton__    = '__singleton__',
 		__super__        = '__super__',
 		__type__         = '__type__',
-		Name_lc          = Name.toLowerCase(), U,
+		UNDEF, Name_lc   = Name.toLowerCase(),
 		anon_list        = Function.anon_list,
 		internals        = util.obj(),
 		re_invalid_chars = /[^A-Za-z0-9_\.$<>\[\]\{\}]/g,
