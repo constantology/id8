@@ -231,6 +231,7 @@ util.def( __lib__, 'Class', function() {
 	}
 
 	function make_singleton( Constructor, singleton_config ) {
+		process_after( Constructor );
 		var instance = Constructor.create.apply( null, singleton_config === true ? [] : [].concat( singleton_config ) );
 
 		util.def( Constructor, __singleton__, util.describe( { value : instance }, 'r' ) );

@@ -33,7 +33,7 @@ util.def( __lib__, 'define', function() {
 			registered_alias[alias] = this;
 		}, Constructor );
 
-		process_after( Constructor );
+		class_config.singleton || process_after( Constructor );
 
 		return Class;
 	}

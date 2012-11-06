@@ -166,7 +166,7 @@ util.def( __lib__, 'define', function() {
 			registered_alias[alias] = this;
 		}, Constructor );
 
-		process_after( Constructor );
+		class_config.singleton || process_after( Constructor );
 
 		return Class;
 	}
@@ -415,6 +415,7 @@ util.def( __lib__, 'Class', function() {
 	}
 
 	function make_singleton( Constructor, singleton_config ) {
+		process_after( Constructor );
 		var instance = Constructor.create.apply( null, singleton_config === true ? [] : [].concat( singleton_config ) );
 
 		util.def( Constructor, __singleton__, util.describe( { value : instance }, 'r' ) );
