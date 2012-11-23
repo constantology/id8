@@ -64,9 +64,7 @@
 	function process_after( Class ) {
 		var after = ( internals[Class[__guid__]] || internals.empty ).after;
 
-		!Array.isArray( after ) || after.map( function( fn ) {
-			!is_fun( fn ) || fn.call( null, this );
-		}, Class );
+		!Array.isArray( after ) || after.invoke( 'call', null, Class );
 
 		return Class;
 	}
@@ -74,9 +72,7 @@
 	function process_before( ctx ) {
 		var before = ( internals[ctx.constructor[__guid__]] || internals.empty ).before;
 
-		!Array.isArray( before ) || before.map( function( fn ) {
-			!is_fun( fn ) || fn.call( null, this.constructor, this );
-		}, ctx );
+		!Array.isArray( before ) || before.invoke( 'call', null, ctx.constructor, ctx );
 
 		return ctx;
 	}
