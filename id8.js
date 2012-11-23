@@ -1,7 +1,7 @@
 ;!function( util, Name, PACKAGE  ) {
 	"use strict";
 
-/*~  src/lib.js  ~*/
+/*~  id8/src/lib.js  ~*/
 	function __lib__( name_or_type ) {
 		var Class = is_fun( name_or_type ) && util.type( name_or_type ) == 'class'
 				  ? name_or_type
@@ -102,7 +102,7 @@
 		return type in anon_list ? 'Anonymous' : type;
 	}
 
-/*~  src/vars.js  ~*/
+/*~  id8/src/vars.js  ~*/
 	var __chain__        = '__chain__',
 		__classname__    = '__classname__',
 		__config__       = '__config__',
@@ -126,7 +126,7 @@
 
 
 
-/*~  src/lib.define.js  ~*/
+/*~  id8/src/lib.define.js  ~*/
 util.def( __lib__, 'define', function() {
 // public methods
 	function define( class_path, descriptor ) {
@@ -177,7 +177,7 @@ util.def( __lib__, 'define', function() {
 	return define;
 }(), 'w' );
 
-/*~  src/Class.js  ~*/
+/*~  id8/src/Class.js  ~*/
 util.def( __lib__, 'Class', function() {
 // public methods
 	function Class( config ) {
@@ -429,7 +429,7 @@ util.def( __lib__, 'Class', function() {
 	return Class;
 }(), 'w' );
 
-/*~  src/Source.js  ~*/
+/*~  id8/src/Source.js  ~*/
 __lib__.define( namespace( 'Source' ), function() {
 	function afterdefine( Class  ) {
 		var mixins = Class.prototype.mixins;
@@ -545,7 +545,7 @@ __lib__.define( namespace( 'Source' ), function() {
 	};
 }() );
 
-/*~  src/Callback.js  ~*/
+/*~  id8/src/Callback.js  ~*/
 __lib__.define( namespace( 'Callback' ), function() {
 	function buffer() {
 		if ( bid in this ) return this;
@@ -617,7 +617,7 @@ __lib__.define( namespace( 'Callback' ), function() {
 	};
 }() );
 
-/*~  src/Hash.js  ~*/
+/*~  id8/src/Hash.js  ~*/
 __lib__.define( namespace( 'Hash' ), function() {
 	var ID = __guid__, cache = util.obj();
 
@@ -672,7 +672,7 @@ __lib__.define( namespace( 'Hash' ), function() {
 	};
 }() );
 
-/*~  src/Observer.js  ~*/
+/*~  id8/src/Observer.js  ~*/
 __lib__.define( namespace( 'Observer' ), function() {
 	function broadcast( args, cb ) {
 		if ( !is_fun( cb.handleEvent ) ) return true;
@@ -945,14 +945,14 @@ __lib__.define( namespace( 'Observer' ), function() {
 	};
 }() );
 
-/*~  src/nativex.js  ~*/
+/*~  id8/src/nativex.js  ~*/
 	util.x.cache( 'Function', function( Type ) {
 		util.def( Type.prototype, 'callback', function( conf ) {
 			return ( new __lib__.Callback( this, conf ) ).fire.mimic( this );
 		}, 'w' );
 	} );
 
-/*~  src/expose.js  ~*/
+/*~  id8/src/expose.js  ~*/
 	util.iter( PACKAGE ) || ( PACKAGE = util.ENV == 'commonjs' ? module : util.global );
 
 	util.defs( ( __lib__ = util.expose( __lib__, Name, PACKAGE ) ), {

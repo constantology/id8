@@ -4,7 +4,8 @@
 		"files" : ["lib", "vars", "lib.define", "Class", "Source", "Callback", "Hash", "Observer", "nativex", "expose"]
 	},
 	"target"    : {
-		"dir"   : "{pwd}"
+		"dir"   : "{pwd}",
+		"min"   : true
 	},
 	"type"      : "application/javascript"
 }
