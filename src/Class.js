@@ -109,12 +109,10 @@ util.def( __lib__, 'Class', function() {
 			Constructor = make_method( 'parent', ctor, desc_super, 'constructor' );
 
 		prototype.constructor = Class;
-		prototype.original    = desc_default_super.value;
-		prototype.parent      = desc_default_super.value;
 
-		util.def( Class,     __guid__,  util.guid(), 'r', true )
-			.def( Class,     __super__, desc_super,       true )
-			.def( prototype, __chain__, desc_chain,       true );
+		util.def( Class,     __guid__,   util.guid(), 'r',   true )
+			.def( Class,     __super__,  desc_super,         true )
+			.def( prototype, __chain__,  desc_chain,         true );
 
 		make_processable( Class, config );
 

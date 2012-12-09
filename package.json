@@ -4,10 +4,10 @@
 		"email"       : "christos@muigui.com",
 		"url"         : "http://muigui.com"
 	},
-	"description"     : "id8 is a small library designed to help you write object-oriented code that is easy to maintain and scale. id8 contains a Class constructor, as well as full-featured Observer, Callback and Hash classes.",
 	"dependencies"    : {
 		"m8"          : ">= 0.3.4"
 	},
+	"description"     : "id8 is a small library designed to help you write object-oriented code that is easy to maintain and scale. id8 contains a Class constructor, as well as full-featured Observer, Callback and Hash classes.",
 	"devDependencies" : {
 		"catn8"       : ">= 0.0.4",
 		"chai"        : ">= 1.2.0",
@@ -30,5 +30,5 @@
 	"scripts"         : {
 		"test"        : "mocha -c --ignore-leaks -R spec -s 575 -u tdd ./test/*.test.js"
 	},
-	"version"         : "0.2.4"
+	"version"         : "0.2.5"
 }
