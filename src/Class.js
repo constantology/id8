@@ -203,6 +203,12 @@ util.def( __lib__, 'Class', function() {
 		return Class;
 	}
 
+	function make___proto__( super_class ) {
+		return ( super_class !== Error && !is( super_class.prototype, Error ) )
+			 ? Object.create( super_class.prototype )
+			 : new super_class;
+	}
+
 	function make_prototype( class_config ) {
 		var desc        = extract_default_properties( class_config, default_prop_names ),
 			super_class = class_config.extend,
@@ -211,7 +217,7 @@ util.def( __lib__, 'Class', function() {
 				processed[key] = true;
 				key in internal_method_names || add.call( proto, key, value );
 				return proto;
-			}, Object.create( super_class.prototype ) );
+			}, make___proto__( super_class ) );
 
 // this allows you to call "this.parent();" on a Class that has no Super Class, without throwing any errors...
 		Object.getOwnPropertyNames( prototype ).forEach( function( key ) {

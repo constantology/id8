@@ -18,8 +18,8 @@ util.def( __lib__, 'define', function() {
 		ClassName   = class_path.pop();
 		Package     = util.bless( class_path, descriptor.module );
 
-		if ( !class_config.extend && __lib__.Source )
-			class_config.extend = __lib__.Source;
+		if ( !class_config.extend )
+			class_config.extend = get( 'Source' ) || Object;
 
 		Class       = Package[ClassName] = __lib__.Class( class_config );
 
@@ -35,6 +35,9 @@ util.def( __lib__, 'define', function() {
 
 		class_config.singleton || process_after( Constructor );
 
+		if ( is_str( descriptor.path ) && util.AMD )
+			util.define( descriptor.path, Class );
+
 		return Class;
 	}
 
@@ -43,7 +46,7 @@ util.def( __lib__, 'define', function() {
 		return no_register ? Class : register( Class );
 	}
 
-	var default_prop_names = 'alias module noreg'.split( ' ' ).reduce( to_obj, util.obj() );
+	var default_prop_names = 'alias module noreg path'.split( ' ' ).reduce( to_obj, util.obj() );
 
 	return define;
 }(), 'w' );

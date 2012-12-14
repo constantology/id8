@@ -91,6 +91,10 @@ __lib__.define( namespace( 'Source' ), function() {
 	return {
 		constructor    : function Source( config ) {
 			this.applyConfig( this.initConfig( config ) );
+			if ( this.path ) {
+				util.define( this.path, this );
+				delete this.path;
+			}
 			this.autoInit === false || this.init();
 		},
 		afterdefine    : afterdefine,
@@ -102,7 +106,7 @@ __lib__.define( namespace( 'Source' ), function() {
 // constructor methods
 // internal methods
 		applyConfig : function( config ) {
-			util.copy( this, config );
+			util.copy( this, is_obj( config ) ? config : {} );
 
 			util.def( this, __config__, { value : config }, 'r', true );
 		},

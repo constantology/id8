@@ -1,7 +1,10 @@
 ;!function( util, Name, PACKAGE  ) {
 	"use strict";
 
+
+
 /*~  src/lib.js  ~*/
+
 	function __lib__( name_or_type ) {
 		var Class = is_fun( name_or_type ) && util.type( name_or_type ) == 'class'
 				  ? name_or_type
@@ -102,7 +105,10 @@
 		return type in anon_list ? 'Anonymous' : type;
 	}
 
+
+
 /*~  src/vars.js  ~*/
+
 	var __chain__        = '__chain__',
 		__classname__    = '__classname__',
 		__config__       = '__config__',
@@ -126,7 +132,10 @@
 
 
 
+
+
 /*~  src/lib.define.js  ~*/
+
 util.def( __lib__, 'define', function() {
 // public methods
 	function define( class_path, descriptor ) {
@@ -147,8 +156,8 @@ util.def( __lib__, 'define', function() {
 		ClassName   = class_path.pop();
 		Package     = util.bless( class_path, descriptor.module );
 
-		if ( !class_config.extend && __lib__.Source )
-			class_config.extend = __lib__.Source;
+		if ( !class_config.extend )
+			class_config.extend = get( 'Source' ) || Object;
 
 		Class       = Package[ClassName] = __lib__.Class( class_config );
 
@@ -164,6 +173,10 @@ util.def( __lib__, 'define', function() {
 
 		class_config.singleton || process_after( Constructor );
 
+		if ( is_str( descriptor.path ) && util.AMD )
+			util.define( descriptor.path, Class );
+
+
 		return Class;
 	}
 
@@ -172,12 +185,15 @@ util.def( __lib__, 'define', function() {
 		return no_register ? Class : register( Class );
 	}
 
-	var default_prop_names = 'alias module noreg'.split( ' ' ).reduce( to_obj, util.obj() );
+	var default_prop_names = 'alias module noreg path'.split( ' ' ).reduce( to_obj, util.obj() );
 
 	return define;
 }(), 'w' );
 
+
+
 /*~  src/Class.js  ~*/
+
 util.def( __lib__, 'Class', function() {
 // public methods
 	function Class( config ) {
@@ -383,6 +399,12 @@ util.def( __lib__, 'Class', function() {
 		return Class;
 	}
 
+	function make___proto__( super_class ) {
+		return ( super_class !== Error && !is( super_class.prototype, Error ) )
+			 ? Object.create( super_class.prototype )
+			 : new super_class;
+	}
+
 	function make_prototype( class_config ) {
 		var desc        = extract_default_properties( class_config, default_prop_names ),
 			super_class = class_config.extend,
@@ -391,7 +413,7 @@ util.def( __lib__, 'Class', function() {
 				processed[key] = true;
 				key in internal_method_names || add.call( proto, key, value );
 				return proto;
-			}, Object.create( super_class.prototype ) );
+			}, make___proto__( super_class ) );
 
 // this allows you to call "this.parent();" on a Class that has no Super Class, without throwing any errors...
 		Object.getOwnPropertyNames( prototype ).forEach( function( key ) {
@@ -427,7 +449,10 @@ util.def( __lib__, 'Class', function() {
 	return Class;
 }(), 'w' );
 
+
+
 /*~  src/Source.js  ~*/
+
 __lib__.define( namespace( 'Source' ), function() {
 	function afterdefine( Class  ) {
 		var mixins = Class.prototype.mixins;
@@ -521,6 +546,10 @@ __lib__.define( namespace( 'Source' ), function() {
 	return {
 		constructor    : function Source( config ) {
 			this.applyConfig( this.initConfig( config ) );
+			if ( this.path ) {
+				util.define( this.path, this );
+				delete this.path;
+			}
 			this.autoInit === false || this.init();
 		},
 		afterdefine    : afterdefine,
@@ -532,7 +561,7 @@ __lib__.define( namespace( 'Source' ), function() {
 // constructor methods
 // internal methods
 		applyConfig : function( config ) {
-			util.copy( this, config );
+			util.copy( this, is_obj( config ) ? config : {} );
 
 			util.def( this, __config__, { value : config }, 'r', true );
 		},
@@ -543,7 +572,10 @@ __lib__.define( namespace( 'Source' ), function() {
 	};
 }() );
 
+
+
 /*~  src/Callback.js  ~*/
+
 __lib__.define( namespace( 'Callback' ), function() {
 	function buffer() {
 		if ( bid in this ) return this;
@@ -615,7 +647,10 @@ __lib__.define( namespace( 'Callback' ), function() {
 	};
 }() );
 
+
+
 /*~  src/Hash.js  ~*/
+
 __lib__.define( namespace( 'Hash' ), function() {
 	var ID = __guid__, cache = util.obj();
 
@@ -670,7 +705,10 @@ __lib__.define( namespace( 'Hash' ), function() {
 	};
 }() );
 
+
+
 /*~  src/Observer.js  ~*/
+
 __lib__.define( namespace( 'Observer' ), function() {
 	function broadcast( args, cb ) {
 		if ( !is_fun( cb.handleEvent ) ) return true;
@@ -943,14 +981,20 @@ __lib__.define( namespace( 'Observer' ), function() {
 	};
 }() );
 
+
+
 /*~  src/nativex.js  ~*/
+
 	util.x.cache( 'Function', function( Type ) {
 		util.def( Type.prototype, 'callback', function( conf ) {
 			return ( new __lib__.Callback( this, conf ) ).fire.mimic( this );
 		}, 'w' );
 	} );
 
+
+
 /*~  src/expose.js  ~*/
+
 	util.iter( PACKAGE ) || ( PACKAGE = util.ENV == 'commonjs' ? module : util.global );
 
 	util.defs( ( __lib__ = util.expose( __lib__, Name, PACKAGE ) ), {
@@ -967,6 +1011,8 @@ __lib__.define( namespace( 'Observer' ), function() {
 // extend Function and Object natives with id8's extensions if not sandboxed
 // or sandboxed environment's natives with all m8 AND id8 extensions
 	util.x( Object, Array, Boolean, Function );
+
+
 
 // at this point we don't know if m8 is available or not, and as such do not know what environment we are in.
 // so, we check and do what is required.
