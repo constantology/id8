@@ -1,5 +1,5 @@
 __lib__.define( namespace( 'Source' ), function() {
-	function afterdefine( Class  ) {
+	function afterdefine( Class ) {
 		var mixins = Class.prototype.mixins;
 
 // if you don't know why you don't want an Object on a prototype, then you should definitely find out.
@@ -13,7 +13,7 @@ __lib__.define( namespace( 'Source' ), function() {
 			 : Class;
 	}
 
-	function beforeinstance( Class, instance ) {
+	function beforeinstance( Class, instance, args ) {
 		instance.$mx = Class[__mixins__];
 	}
 

@@ -95,7 +95,9 @@ util.def( __lib__, 'Class', function() {
 			if ( singleton( this.constructor ) )
 				return this.constructor[__singleton__];
 
-			return get_return_value( process_before( this ), Constructor.call( this, arguments ) );
+			this.constructor.valueOf() !== Constructor.valueOf() || process_before( this, arguments );
+
+			return get_return_value( this, Constructor.call( this, arguments ) );
 		}
 
 		var ctor        = config.constructor,

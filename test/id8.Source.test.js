@@ -18,9 +18,6 @@ suite( 'id8.Source', function() {
 			module         : mod,
 			afterdefine    : function() {
 				after_define_01 = true;
-			},
-			beforeinstance : function() {
-				before_instance_01 = true;
 			}
 		} );
 
@@ -44,24 +41,46 @@ suite( 'id8.Source', function() {
 	} );
 
 	test( 'executing functions before a Class is instantiated', function( done ) {
-		var before_instance_02 = false;
-
-		expect( before_instance_01 ).to.be.false;
+		var before_instance_01 = false, before_instance_02 = false;
 
 		id8.define( 'SourceTest_03', {
-			extend         : mod.SourceTest_02,
+			constructor    : function SourceTest_03() {
+				this.parent( arguments );
+			},
+			extend         : 'Source',
 			module         : mod,
-			singleton      : true,
-			beforeinstance : function() {
+			beforeinstance : function( Class, instance, args ) {
+				expect( instance ).to.be.an.instanceof( Class );
+				expect( args[0] ).to.eql( [1,2,3] );
+				before_instance_01 = true;
+			}
+		} );
+
+		id8( 'SourceTest_03', [1, 2, 3] );
+
+		expect( before_instance_01 ).to.be.true;
+
+		before_instance_01 = false;
+		expect( before_instance_01 ).to.be.false;
+
+		id8.define( 'SourceTest_04', {
+			extend         : mod.SourceTest_03,
+			module         : mod,
+			beforeinstance : function( Class, instance, args ) {
+				expect( instance ).to.be.an.instanceof( Class );
+				expect( args[0] ).to.eql( [1,2,3] );
 				before_instance_02 = true;
 			}
 		} );
+
+		id8( 'SourceTest_04', [1, 2, 3] );
 
 		expect( before_instance_01 ).to.be.true;
 		expect( before_instance_02 ).to.be.true;
 
 		done();
 	} );
+
 
 	test( 'initialising and applying instance configurations', function( done ) {
 		var instance = new mod.SourceTest_02( { foo : 'bar', bar : 'bam', bam : 'boom' } );

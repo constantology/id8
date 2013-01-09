@@ -5,7 +5,7 @@
 		"url"         : "http://muigui.com"
 	},
 	"dependencies"    : {
-		"m8"          : ">= 0.3.4"
+		"m8"          : ">= 0.3.8"
 	},
 	"description"     : "id8 is a small library designed to help you write object-oriented code that is easy to maintain and scale. id8 contains a Class constructor, as well as full-featured Observer, Callback and Hash classes.",
 	"devDependencies" : {
@@ -30,5 +30,5 @@
 	"scripts"         : {
 		"test"        : "mocha -c --ignore-leaks -R spec -s 575 -u tdd ./test/*.test.js"
 	},
-	"version"         : "0.2.6"
+	"version"         : "0.2.7"
 }

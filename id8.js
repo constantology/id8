@@ -72,10 +72,10 @@
 		return Class;
 	}
 
-	function process_before( ctx ) {
+	function process_before( ctx, args ) {
 		var before = ( internals[ctx.constructor[__guid__]] || internals.empty ).before;
 
-		!Array.isArray( before ) || before.invoke( 'call', null, ctx.constructor, ctx );
+		!Array.isArray( before ) || before.invoke( 'call', null, ctx.constructor, ctx, args );
 
 		return ctx;
 	}
@@ -175,7 +175,6 @@ util.def( __lib__, 'define', function() {
 
 		if ( is_str( descriptor.path ) && util.AMD )
 			util.define( descriptor.path, Class );
-
 
 		return Class;
 	}
@@ -291,7 +290,9 @@ util.def( __lib__, 'Class', function() {
 			if ( singleton( this.constructor ) )
 				return this.constructor[__singleton__];
 
-			return get_return_value( process_before( this ), Constructor.call( this, arguments ) );
+			this.constructor.valueOf() !== Constructor.valueOf() || process_before( this, arguments );
+
+			return get_return_value( this, Constructor.call( this, arguments ) );
 		}
 
 		var ctor        = config.constructor,
@@ -454,7 +455,7 @@ util.def( __lib__, 'Class', function() {
 /*~  src/Source.js  ~*/
 
 __lib__.define( namespace( 'Source' ), function() {
-	function afterdefine( Class  ) {
+	function afterdefine( Class ) {
 		var mixins = Class.prototype.mixins;
 
 // if you don't know why you don't want an Object on a prototype, then you should definitely find out.
@@ -468,7 +469,7 @@ __lib__.define( namespace( 'Source' ), function() {
 			 : Class;
 	}
 
-	function beforeinstance( Class, instance ) {
+	function beforeinstance( Class, instance, args ) {
 		instance.$mx = Class[__mixins__];
 	}
 

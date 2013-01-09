@@ -65,10 +65,10 @@
 		return Class;
 	}
 
-	function process_before( ctx ) {
+	function process_before( ctx, args ) {
 		var before = ( internals[ctx.constructor[__guid__]] || internals.empty ).before;
 
-		!Array.isArray( before ) || before.invoke( 'call', null, ctx.constructor, ctx );
+		!Array.isArray( before ) || before.invoke( 'call', null, ctx.constructor, ctx, args );
 
 		return ctx;
 	}
