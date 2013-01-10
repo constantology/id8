@@ -1,10 +1,12 @@
-typeof id8  !== 'undefined' || ( id8  = require( '../id8' ) );
-typeof chai !== 'undefined' || ( chai = require( 'chai' ) );
+typeof id8  !== 'undefined'   || ( id8    = require( '../id8' ) );
+typeof chai !== 'undefined'   || ( chai   = require( 'chai' ) );
 
-m8     = id8.m8;
-expect = chai.expect;
+typeof m8     !== 'undefined' || ( m8     = id8.m8 );
+typeof expect !== 'undefined' || ( expect = chai.expect );
 
 suite( 'id8.Callback', function() {
+	this.timeout( 350 );
+
 	test( 'Function.prototype.callback', function( done ) {
 		var ctx    = { foo : 'bar' },
 			cbfire = ( function() {} ).callback( { ctx : ctx } ),
@@ -69,7 +71,6 @@ suite( 'id8.Callback', function() {
 	} );
 
 	test( 'delay', function( done ) {
-		this.timeout(200);
 		var cb = id8.Callback( function() {
 					var time = Date.now() - ms;
 					expect( time ).to.be.above( 90 );
@@ -137,5 +138,5 @@ suite( 'id8.Callback', function() {
 
 		done();
 	} );
-
+// */
 } );

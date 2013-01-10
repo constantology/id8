@@ -1,8 +1,8 @@
-typeof id8  !== 'undefined' || ( id8  = require( '../id8' ) );
-typeof chai !== 'undefined' || ( chai = require( 'chai' ) );
+typeof id8  !== 'undefined'   || ( id8    = require( '../id8' ) );
+typeof chai !== 'undefined'   || ( chai   = require( 'chai' ) );
 
-m8     = id8.m8;
-expect = chai.expect;
+typeof m8     !== 'undefined' || ( m8     = id8.m8 );
+typeof expect !== 'undefined' || ( expect = chai.expect );
 
 suite( 'id8.Observer', function() {
 	function testCallback( obs, success, fn ) { fn.call( this, obs, success ); }
