@@ -101,6 +101,7 @@ __lib__.define( namespace( 'Source' ), function() {
 		beforeinstance : beforeinstance,
 		module         : __lib__,
 // public properties
+		autoInit       : true,
 		mixins         : null,
 // public methods
 // constructor methods

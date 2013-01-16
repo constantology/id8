@@ -70,7 +70,7 @@ suite( 'id8.Callback', function() {
 		cb.fire();
 	} );
 
-	test( 'delay', function( done ) {
+	test( 'delay — delay is 100ms', function( done ) {
 		var cb = id8.Callback( function() {
 					var time = Date.now() - ms;
 					expect( time ).to.be.above( 90 );

@@ -242,7 +242,15 @@ util.def( __lib__, 'Class', function() {
 	function singleton( Constructor ) { return !Constructor ? null : Constructor[__singleton__] || null; }
 
 // Class instance method helpers
-	function get_args( args ) { return util.tostr( args[0] ) === '[object Arguments]' ? get_args( args[0] ) : args; }
+	function get_args( args, fn_curr, fn_prev ) {
+		return util.tostr( args[0] ) === '[object Arguments]'
+			 ? fn_curr in internal_method_names
+			 ? get_args( args[0] )
+			 : fn_prev
+			 ? args[0]
+			 : args
+			 : args;
+	}
 
 	function get_method_descriptor( o, k ) {
 		var desc = Object.getOwnPropertyDescriptor( o, k )
@@ -292,7 +300,7 @@ util.def( __lib__, 'Class', function() {
 
 			this.constructor.valueOf() !== Constructor.valueOf() || process_before( this, arguments );
 
-			return get_return_value( this, Constructor.call( this, arguments ) );
+			return get_return_value( this, Constructor.apply( this, arguments ) );
 		}
 
 		var ctor        = config.constructor,
@@ -371,7 +379,7 @@ util.def( __lib__, 'Class', function() {
 
 			no_update_method || util.def( this, __method__, method_name, 'w', true );
 
-			return_value = ( method || desc_super.value ).apply( this, get_args( arguments ) );
+			return_value = ( method || desc_super.value ).apply( this, get_args( arguments, method_name, previous_method ) );
 
 			no_update_method || util.def( this, __method__, previous_method, 'w', true );
 
@@ -557,6 +565,7 @@ __lib__.define( namespace( 'Source' ), function() {
 		beforeinstance : beforeinstance,
 		module         : __lib__,
 // public properties
+		autoInit       : true,
 		mixins         : null,
 // public methods
 // constructor methods

@@ -146,7 +146,7 @@ suite( 'id8.Observer', function() {
 		done();
 	} );
 
-	test( 'delayed firing of an observer callback', function( done ) {
+	test( 'delayed firing of an observer callback — delay is 250ms', function( done ) {
 		function cb( obs, success ) {
 			var scope = this, time = Date.now() - ms;
 			expect( time ).to.be.within( 220, 280 );
@@ -166,7 +166,7 @@ suite( 'id8.Observer', function() {
 		observer.broadcast( 'test:delayed', true );
 	} );
 
-	test( 'buffering an observer callback', function( done ) {
+	test( 'buffering an observer callback — should only be called once every 50ms', function( done ) {
 		function cb( obs, success ) {
 			expect( success ).to.be.true;
 			expect( obs ).to.equal( observer );
