@@ -243,13 +243,15 @@ util.def( __lib__, 'Class', function() {
 
 // Class instance method helpers
 	function get_args( args, fn_curr, fn_prev ) {
-		return util.tostr( args[0] ) === '[object Arguments]'
-			 ? fn_curr in internal_method_names
-			 ? get_args( args[0] )
-			 : fn_prev
-			 ? args[0]
-			 : args
-			 : args;
+		if ( args.length && util.tostr( args[0] ) === '[object Arguments]' ) {
+			if ( args.length < 2 && arguments.length > 1 ) {
+				if ( fn_curr in internal_method_names )
+					return get_args( args[0] );
+				if ( fn_prev && fn_curr === fn_prev )
+					return args[0];
+			}
+		}
+		return args;
 	}
 
 	function get_method_descriptor( o, k ) {
