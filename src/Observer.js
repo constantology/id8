@@ -145,6 +145,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 		broadcasting       : false,
 		destroyed          : false,
 		destroying         : false,
+		listeners          : null,
 		observer_suspended : false,
 
 // public methods

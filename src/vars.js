@@ -5,6 +5,8 @@
 		__method__       = '__method__',
 		__mixins__       = '__mixins__',
 		__name__         = '__name__',
+		__override__     = '__override__',
+		__proto__        = '__proto__',
 		__singleton__    = '__singleton__',
 		__super__        = '__super__',
 		__type__         = '__type__',
@@ -15,7 +17,7 @@
 		registered_alias = util.obj(),
 		registered_path  = util.obj(),
 		registered_type  = util.obj(),
-		reserved_props   = [__chain__, __config__, __method__, __type__, 'mixin', 'original', 'parent'].reduce( to_obj, util.obj() );
+		reserved_props   = [__chain__, __config__, __method__, __override__, __proto__, __type__, 'mixin', 'original', 'parent'].reduce( to_obj, util.obj() );
 
 	internals.empty = { after : null, before : null, mixins : null };
 

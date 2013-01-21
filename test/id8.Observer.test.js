@@ -281,7 +281,7 @@ suite( 'id8.Observer', function() {
 		} );
 		
 		expect( o.destroy() ).to.be.true;
-		expect( o.listeners ).to.be.undefined;
+		expect( o.listeners ).to.be.null;
 		expect( o.destroyed ).to.be.true;
 
 		done();

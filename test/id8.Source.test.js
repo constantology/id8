@@ -91,6 +91,45 @@ suite( 'id8.Source', function() {
 
 		done();
 	} );
+
+	test( 'initialising and applying instance configurations with instance method overrides', function( done ) {
+		var NumberClass  = id8.define( 'NumberClass', {
+				num      : 10,
+				getNum   : function() {
+					return this.num;
+				},
+				setNum   : function( num ) {
+					this.num = num;
+					return this.getNum();
+				}
+			} ),
+			number_class = new NumberClass( {
+				getNum : function( allow ) {
+					return allow === true ? this.original() : 'no! you don\'t get number!!!';
+				},
+				setNum : function( num, allow ) {
+					if ( allow === true )
+						return this.original( num );
+					else
+						throw new Error( 'no! you don\'t get number!!!' )
+				}
+			} );
+
+		expect( number_class.getNum() ).to.equal( 'no! you don\'t get number!!!' );
+		expect( number_class.getNum( true ) ).to.equal( 10 );
+
+		try {
+			expect( number_class.setNum() ).to.throw( Error );
+		} catch( e ) {
+			expect( e.message ).to.equal( 'no! you don\'t get number!!!' );
+		}
+		expect( number_class.setNum( 100, true ) ).to.equal( 'no! you don\'t get number!!!' );
+		expect( number_class.getNum( true ) ).to.equal( 100 );
+		expect( number_class.num ).to.equal( 100 );
+
+		done();
+	} );
+
 	test( 'mixins', function( done ) {
 		var expected_options      = { delay : 250 },
 			instance,

@@ -14,15 +14,14 @@ __lib__.define( namespace( 'Source' ), function() {
 	}
 
 	function beforeinstance( Class, instance, args ) {
-		instance.$mx = Class[__mixins__];
+		util.def( instance, '$mx', { value : Class[__mixins__] }, 'w', true );
 	}
 
 	function decorate( Class ) {
 		util.def( Class, __mixins__, { value : util.obj() },     'w', true );
 		util.def( Class,  'mixin',   mixins_apply.bind( Class ), 'w', true );
 
-		if ( !is_fun( Class.prototype.mixin ) )
-			Class.prototype.mixin = mixin_exec;
+		is_fun( Class.prototype.mixin ) || util.def( Class.prototype, 'mixin', mixin_exec, 'w', true );
 
 		return Class;
 	}
@@ -65,7 +64,7 @@ __lib__.define( namespace( 'Source' ), function() {
 	}
 
 	function mixin_exec( name, args ) {
-		var mx     = this.constructor[__mixins__],
+		var mx     = this.$mx,
 			method = this[__method__];
 
 		switch ( arguments.length ) {
@@ -91,9 +90,9 @@ __lib__.define( namespace( 'Source' ), function() {
 	return {
 		constructor    : function Source( config ) {
 			this.applyConfig( this.initConfig( config ) );
-			if ( this.path ) {
-				util.define( this.path, this );
-				delete this.path;
+			if ( this.path ) {                  // this allows us to create Class instances to within an AMD style
+				util.define( this.path, this ); // environment without needing to wrap them all in IIFEs. it also means
+				delete this.path;               // we can avoid a lot of refactoring, should we decided to not use AMD
 			}
 			this.autoInit === false || this.init();
 		},
@@ -101,19 +100,27 @@ __lib__.define( namespace( 'Source' ), function() {
 		beforeinstance : beforeinstance,
 		module         : __lib__,
 // public properties
+		$mx            : null,
 		autoInit       : true,
 		mixins         : null,
+		path           : null,
 // public methods
+		mixin          : null, // this is set by `beforeinstance` to avoid weird behaviour
 // constructor methods
-// internal methods
 		applyConfig : function( config ) {
-			util.copy( this, is_obj( config ) ? config : {} );
+			!is_obj( config ) || Object.keys( config ).forEach( function( key ) {
+				if ( is_fun( config[key] ) && is_fun( this[key] ) ) // this allows you to override a method for a
+					this[__override__]( key, config[key] );         // specific instance of a Class, rather than require
+				else                                                // you extend the Class for a few minor changes
+					this[key] = config[key];                        // NB: can also be achieved by creating a `singleton`
+			}, this );
 
 			util.def( this, __config__, { value : config }, 'r', true );
 		},
 		initConfig   : function( config ) {
 			return is_obj( config ) ? config : util.obj();
 		},
+// internal methods
 		init         : util.noop
 	};
 }() );

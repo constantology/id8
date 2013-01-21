@@ -44,6 +44,13 @@ util.def( __lib__, 'Class', function() {
 		return this;
 	}
 
+	function override_instance_method( name, method ) {
+		if ( is_fun( method ) )
+			this[name] = make_method( 'original', method, get_method_descriptor( this, name ), name );
+
+		return this;
+	}
+
 	function singleton( Constructor ) { return !Constructor ? null : Constructor[__singleton__] || null; }
 
 // Class instance method helpers
@@ -231,7 +238,8 @@ util.def( __lib__, 'Class', function() {
 				return proto;
 			}, make___proto__( super_class ) );
 
-// this allows you to call "this.parent();" on a Class that has no Super Class, without throwing any errors...
+// this allows you to take advantage of method chaining, as well as being able to call "this.parent();" on a Class
+// that has no Super Class, without throwing any errors...
 		Object.getOwnPropertyNames( prototype ).forEach( function( key ) {
 // skip non-methods and already processed properties
 			 key in processed    || key in internal_method_names ||
@@ -240,8 +248,9 @@ util.def( __lib__, 'Class', function() {
 
 		!is_str( class_config.type ) || util.def( prototype, __type__, class_config.type, 'c', true );
 
-		util.def( prototype, 'original', desc_default_super, 'w', true )
-			.def( prototype, 'parent',   desc_default_super, 'w', true );
+		__override__ in prototype || util.def( prototype, __override__, override_instance_method, 'w', true );
+		'original'   in prototype || util.def( prototype, 'original',   desc_default_super,       'w', true );
+		'parent'     in prototype || util.def( prototype, 'parent',     desc_default_super,       'w', true );
 
 		return prototype;
 	}

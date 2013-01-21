@@ -107,33 +107,6 @@
 
 
 
-/*~  src/vars.js  ~*/
-
-	var __chain__        = '__chain__',
-		__classname__    = '__classname__',
-		__config__       = '__config__',
-		__guid__         = '__guid8__',
-		__method__       = '__method__',
-		__mixins__       = '__mixins__',
-		__name__         = '__name__',
-		__singleton__    = '__singleton__',
-		__super__        = '__super__',
-		__type__         = '__type__',
-		UNDEF, Name_lc   = Name.toLowerCase(),
-		anon_list        = Function.anon_list,
-		internals        = util.obj(),
-		re_invalid_chars = /[^A-Za-z0-9_\.$<>\[\]\{\}]/g,
-		registered_alias = util.obj(),
-		registered_path  = util.obj(),
-		registered_type  = util.obj(),
-		reserved_props   = [__chain__, __config__, __method__, __type__, 'mixin', 'original', 'parent'].reduce( to_obj, util.obj() );
-
-	internals.empty = { after : null, before : null, mixins : null };
-
-
-
-
-
 /*~  src/lib.define.js  ~*/
 
 util.def( __lib__, 'define', function() {
@@ -235,6 +208,13 @@ util.def( __lib__, 'Class', function() {
 		}
 		else if ( is_fun( method ) )
 			proto[name] = make_method( 'original', method, get_method_descriptor( proto, name ), name );
+
+		return this;
+	}
+
+	function override_instance_method( name, method ) {
+		if ( is_fun( method ) )
+			this[name] = make_method( 'original', method, get_method_descriptor( this, name ), name );
 
 		return this;
 	}
@@ -426,7 +406,8 @@ util.def( __lib__, 'Class', function() {
 				return proto;
 			}, make___proto__( super_class ) );
 
-// this allows you to call "this.parent();" on a Class that has no Super Class, without throwing any errors...
+// this allows you to take advantage of method chaining, as well as being able to call "this.parent();" on a Class
+// that has no Super Class, without throwing any errors...
 		Object.getOwnPropertyNames( prototype ).forEach( function( key ) {
 // skip non-methods and already processed properties
 			 key in processed    || key in internal_method_names ||
@@ -435,8 +416,9 @@ util.def( __lib__, 'Class', function() {
 
 		!is_str( class_config.type ) || util.def( prototype, __type__, class_config.type, 'c', true );
 
-		util.def( prototype, 'original', desc_default_super, 'w', true )
-			.def( prototype, 'parent',   desc_default_super, 'w', true );
+		__override__ in prototype || util.def( prototype, __override__, override_instance_method, 'w', true );
+		'original'   in prototype || util.def( prototype, 'original',   desc_default_super,       'w', true );
+		'parent'     in prototype || util.def( prototype, 'parent',     desc_default_super,       'w', true );
 
 		return prototype;
 	}
@@ -480,15 +462,14 @@ __lib__.define( namespace( 'Source' ), function() {
 	}
 
 	function beforeinstance( Class, instance, args ) {
-		instance.$mx = Class[__mixins__];
+		util.def( instance, '$mx', { value : Class[__mixins__] }, 'w', true );
 	}
 
 	function decorate( Class ) {
 		util.def( Class, __mixins__, { value : util.obj() },     'w', true );
 		util.def( Class,  'mixin',   mixins_apply.bind( Class ), 'w', true );
 
-		if ( !is_fun( Class.prototype.mixin ) )
-			Class.prototype.mixin = mixin_exec;
+		is_fun( Class.prototype.mixin ) || util.def( Class.prototype, 'mixin', mixin_exec, 'w', true );
 
 		return Class;
 	}
@@ -531,7 +512,7 @@ __lib__.define( namespace( 'Source' ), function() {
 	}
 
 	function mixin_exec( name, args ) {
-		var mx     = this.constructor[__mixins__],
+		var mx     = this.$mx,
 			method = this[__method__];
 
 		switch ( arguments.length ) {
@@ -557,9 +538,9 @@ __lib__.define( namespace( 'Source' ), function() {
 	return {
 		constructor    : function Source( config ) {
 			this.applyConfig( this.initConfig( config ) );
-			if ( this.path ) {
-				util.define( this.path, this );
-				delete this.path;
+			if ( this.path ) {                  // this allows us to create Class instances to within an AMD style
+				util.define( this.path, this ); // environment without needing to wrap them all in IIFEs. it also means
+				delete this.path;               // we can avoid a lot of refactoring, should we decided to not use AMD
 			}
 			this.autoInit === false || this.init();
 		},
@@ -567,19 +548,27 @@ __lib__.define( namespace( 'Source' ), function() {
 		beforeinstance : beforeinstance,
 		module         : __lib__,
 // public properties
+		$mx            : null,
 		autoInit       : true,
 		mixins         : null,
+		path           : null,
 // public methods
+		mixin          : null, // this is set by `beforeinstance` to avoid weird behaviour
 // constructor methods
-// internal methods
 		applyConfig : function( config ) {
-			util.copy( this, is_obj( config ) ? config : {} );
+			!is_obj( config ) || Object.keys( config ).forEach( function( key ) {
+				if ( is_fun( config[key] ) && is_fun( this[key] ) ) // this allows you to override a method for a
+					this[__override__]( key, config[key] );         // specific instance of a Class, rather than require
+				else                                                // you extend the Class for a few minor changes
+					this[key] = config[key];                        // NB: can also be achieved by creating a `singleton`
+			}, this );
 
 			util.def( this, __config__, { value : config }, 'r', true );
 		},
 		initConfig   : function( config ) {
 			return is_obj( config ) ? config : util.obj();
 		},
+// internal methods
 		init         : util.noop
 	};
 }() );
@@ -868,6 +857,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 		broadcasting       : false,
 		destroyed          : false,
 		destroying         : false,
+		listeners          : null,
 		observer_suspended : false,
 
 // public methods
