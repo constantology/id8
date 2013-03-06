@@ -747,9 +747,16 @@ __lib__.define( namespace( 'Hash' ), function() {
 			cache[this[ID]]         = util.obj();
 			cache_ordered[this[ID]] = [];
 		},
-		clone       : function() { return new __lib__.Hash( this.valueOf() ); },
+		clone       : function() {
+			var h = new __lib__.Hash();
+			cache_ordered[this[ID]].forEach( function( item ) {
+				this.set( item[0], item[1] );
+			}, h );
+			return h;
+		},
 		destroy     : function() {
 			delete cache[this[ID]];
+			delete cache_ordered[this[ID]];
 		},
 		each        : function( fn, ctx ) {
 			var H = this, o = cache[H[ID]]; ctx || ( ctx = H );
