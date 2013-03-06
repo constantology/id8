@@ -1,6 +1,6 @@
 __lib__.define( namespace( 'Callback' ), function() {
 	function buffer() {
-		if ( bid in this ) return this;
+		if ( this[bid] ) return this;
 		this[bid] = setTimeout( buffer_stop.bind( this ), this.buffer );
 		return this.exec.apply( this, arguments );
 	}
@@ -31,9 +31,13 @@ __lib__.define( namespace( 'Callback' ), function() {
 		extend      : Object,
 		module      : __lib__,
 // properties
+		args        : null,
 		buffer      : null,
+		bufferId    : null,
 		count       : 0,
+		ctx         : null,
 		delay       : null,
+		timeoutId   : null,
 		times       : 0,
 // methods
 		disable     : function() {
@@ -65,6 +69,6 @@ __lib__.define( namespace( 'Callback' ), function() {
 			this.count = 0;
 			buffer_stop.call( this.enable() );
 		},
-		stop        : function() { !( tid in this ) || clearTimeout( this[tid] ), delete this[tid]; }
+		stop        : function() { !this[tid] || clearTimeout( this[tid] ), delete this[tid]; }
 	};
 }() );

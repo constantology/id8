@@ -20,6 +20,44 @@ suite( 'id8.Hash', function() {
 		done();
 	} );
 
+	test( 'okeys', function( done ) {
+		var hash = new id8.Hash;
+
+		hash.set( 'zero', 'zero' );
+		hash.set(    '1',     1 );
+		hash.set(    '2',     2 );
+		hash.set(    '3',     3 );
+		hash.set(    '4',     4 );
+		hash.set(    '5',     5 );
+		hash.set(    '6',     6 );
+		hash.set(    '7',     7 );
+		hash.set(    '8',     8 );
+		hash.set(    '9',     9 );
+
+		expect( hash.okeys ).to.eql( ['zero', '1', '2', '3', '4', '5', '6', '7', '8', '9'] );
+
+		done();
+	} );
+
+	test( 'ovalues', function( done ) {
+		var hash = new id8.Hash;
+
+		hash.set( 'zero', 'zero' );
+		hash.set(    '1',     1 );
+		hash.set(    '2',     2 );
+		hash.set(    '3',     3 );
+		hash.set(    '4',     4 );
+		hash.set(    '5',     5 );
+		hash.set(    '6',     6 );
+		hash.set(    '7',     7 );
+		hash.set(    '8',     8 );
+		hash.set(    '9',     9 );
+
+		expect( hash.ovalues ).to.eql( ['zero', 1, 2, 3, 4, 5, 6, 7, 8, 9] );
+
+		done();
+	} );
+
 	test( 'values', function( done ) {
 		expect( h.values ).to.eql( ['bar', [1, 2, 3]] );
 
@@ -91,6 +129,8 @@ suite( 'id8.Hash', function() {
 		expect( h.remove(  1 ) ).to.be.false;
 		expect( h.remove( 'seven' ) ).to.be.false;
 		expect( h.valueOf() ).to.eql( { one : 1, three : 3, five : 5 } );
+		expect( h.okeys ).to.eql( ['one', 'three', 'five'] );
+		expect( h.ovalues ).to.eql( [1, 3, 5] );
 
 		done();
 	} );
