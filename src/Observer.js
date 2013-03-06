@@ -49,6 +49,8 @@ __lib__.define( namespace( 'Observer' ), function() {
 	function findIndex( observer, queue, fn, ctx ) {
 		var cb, i = -1; ctx || ( ctx = observer );
 
+		!is_str( fn ) || ( fn = ctx[fn] );
+
 		while ( cb = queue[++i] ) {
 			if ( cb === fn || ( cb.fn === fn && cb.ctx === ctx ) ) {
 				return i;
