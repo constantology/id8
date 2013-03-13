@@ -29,7 +29,7 @@ __lib__.define( namespace( 'Hash' ), function() {
 		return i;
 	}
 
-	var ID = __guid__, cache = util.obj(), cache_ordered = util.obj();
+	var ID = __guid__, cache = util.obj(), cache_okeyval = util.obj(), cache_ordered = util.obj();
 
 	return {
 		constructor : function Hash( o ) {
@@ -37,6 +37,7 @@ __lib__.define( namespace( 'Hash' ), function() {
 
 			cache[this[ID]]         = util.obj();
 			cache_ordered[this[ID]] = [];
+			cache_okeyval[this[ID]] = [];
 
 			!is_obj( o ) || this.set( o );
 		},
@@ -44,9 +45,9 @@ __lib__.define( namespace( 'Hash' ), function() {
 		module      : __lib__,
 // public properties
 		keys        : { get : function() { return Object.keys( cache[this[ID]] ); } },
-		length      : { get : function() { return this.keys.length; } },
-		okeys       : { get : function() { return cache_ordered[this[ID]].pluck( '0' ); } },
-		ovalues     : { get : function() { return cache_ordered[this[ID]].pluck( '1' ); } },
+		length      : { get : function() { return this.okeys.length; } },
+		okeys       : { get : function() { return cache_okeyval[this[ID]][0] || ( cache_okeyval[this[ID]][0] = cache_ordered[this[ID]].pluck( '0' ) ); } },
+		ovalues     : { get : function() { return cache_okeyval[this[ID]][1] || ( cache_okeyval[this[ID]][1] = cache_ordered[this[ID]].pluck( '1' ) ); } },
 		values      : { get : function() { return Object.values( cache[this[ID]] ); } },
 // public methods
 		aggregate   : function( val, fn, ctx ) {
@@ -55,10 +56,10 @@ __lib__.define( namespace( 'Hash' ), function() {
 		},
 		clear       : function() {
 			delete cache[this[ID]];
-			delete cache_ordered[this[ID]];
 
-			cache[this[ID]]         = util.obj();
-			cache_ordered[this[ID]] = [];
+			cache[this[ID]]                = util.obj();
+			cache_ordered[this[ID]].length = 0;
+			cache_okeyval[this[ID]].length = 0;
 		},
 		clone       : function() {
 			var h = new __lib__.Hash();
@@ -70,6 +71,7 @@ __lib__.define( namespace( 'Hash' ), function() {
 		destroy     : function() {
 			delete cache[this[ID]];
 			delete cache_ordered[this[ID]];
+			delete cache_okeyval[this[ID]];
 		},
 		each        : function( fn, ctx ) {
 			var H = this, o = cache[H[ID]]; ctx || ( ctx = H );
@@ -88,6 +90,8 @@ __lib__.define( namespace( 'Hash' ), function() {
 
 				!~i || cache_ordered[this[ID]].splice( i, 1 );
 
+				cache_okeyval[this[ID]].length = 0;
+
 				return delete cache[this[ID]][k];
 			}
 
@@ -105,6 +109,8 @@ __lib__.define( namespace( 'Hash' ), function() {
 						item[1][1] = v;
 					else
 						cache_ordered[this[ID]].push( [o, v] );
+
+					cache_okeyval[this[ID]].length = 0;
 			}
 		},
 		stringify   : function() { return JSON.stringify( cache[this[ID]] ); },

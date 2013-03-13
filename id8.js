@@ -5,6 +5,7 @@
 
 /*~  src/lib.js  ~*/
 
+
 	function __lib__( name_or_type ) {
 		var Class = is_fun( name_or_type ) && util.type( name_or_type ) == 'class'
 				  ? name_or_type
@@ -107,7 +108,9 @@
 
 
 
+
 /*~  src/vars.js  ~*/
+
 
 	var __chain__        = '__chain__',
 		__classname__    = '__classname__',
@@ -136,7 +139,9 @@
 
 
 
+
 /*~  src/lib.define.js  ~*/
+
 
 util.def( __lib__, 'define', function() {
 // public methods
@@ -193,7 +198,9 @@ util.def( __lib__, 'define', function() {
 
 
 
+
 /*~  src/Class.js  ~*/
+
 
 util.def( __lib__, 'Class', function() {
 // public methods
@@ -473,7 +480,9 @@ util.def( __lib__, 'Class', function() {
 
 
 
+
 /*~  src/Source.js  ~*/
+
 
 __lib__.define( namespace( 'Source' ), function() {
 	function afterdefine( Class ) {
@@ -604,7 +613,9 @@ __lib__.define( namespace( 'Source' ), function() {
 
 
 
+
 /*~  src/Callback.js  ~*/
+
 
 __lib__.define( namespace( 'Callback' ), function() {
 	function buffer() {
@@ -683,7 +694,9 @@ __lib__.define( namespace( 'Callback' ), function() {
 
 
 
+
 /*~  src/Hash.js  ~*/
+
 
 __lib__.define( namespace( 'Hash' ), function() {
 
@@ -716,7 +729,7 @@ __lib__.define( namespace( 'Hash' ), function() {
 		return i;
 	}
 
-	var ID = __guid__, cache = util.obj(), cache_ordered = util.obj();
+	var ID = __guid__, cache = util.obj(), cache_okeyval = util.obj(), cache_ordered = util.obj();
 
 	return {
 		constructor : function Hash( o ) {
@@ -724,6 +737,7 @@ __lib__.define( namespace( 'Hash' ), function() {
 
 			cache[this[ID]]         = util.obj();
 			cache_ordered[this[ID]] = [];
+			cache_okeyval[this[ID]] = [];
 
 			!is_obj( o ) || this.set( o );
 		},
@@ -731,9 +745,9 @@ __lib__.define( namespace( 'Hash' ), function() {
 		module      : __lib__,
 // public properties
 		keys        : { get : function() { return Object.keys( cache[this[ID]] ); } },
-		length      : { get : function() { return this.keys.length; } },
-		okeys       : { get : function() { return cache_ordered[this[ID]].pluck( '0' ); } },
-		ovalues     : { get : function() { return cache_ordered[this[ID]].pluck( '1' ); } },
+		length      : { get : function() { return this.okeys.length; } },
+		okeys       : { get : function() { return cache_okeyval[this[ID]][0] || ( cache_okeyval[this[ID]][0] = cache_ordered[this[ID]].pluck( '0' ) ); } },
+		ovalues     : { get : function() { return cache_okeyval[this[ID]][1] || ( cache_okeyval[this[ID]][1] = cache_ordered[this[ID]].pluck( '1' ) ); } },
 		values      : { get : function() { return Object.values( cache[this[ID]] ); } },
 // public methods
 		aggregate   : function( val, fn, ctx ) {
@@ -742,10 +756,10 @@ __lib__.define( namespace( 'Hash' ), function() {
 		},
 		clear       : function() {
 			delete cache[this[ID]];
-			delete cache_ordered[this[ID]];
-
-			cache[this[ID]]         = util.obj();
-			cache_ordered[this[ID]] = [];
+			
+			cache[this[ID]]                = util.obj();
+			cache_ordered[this[ID]].length = 0;
+			cache_okeyval[this[ID]].length = 0;
 		},
 		clone       : function() {
 			var h = new __lib__.Hash();
@@ -757,6 +771,7 @@ __lib__.define( namespace( 'Hash' ), function() {
 		destroy     : function() {
 			delete cache[this[ID]];
 			delete cache_ordered[this[ID]];
+			delete cache_okeyval[this[ID]];
 		},
 		each        : function( fn, ctx ) {
 			var H = this, o = cache[H[ID]]; ctx || ( ctx = H );
@@ -775,6 +790,8 @@ __lib__.define( namespace( 'Hash' ), function() {
 
 				!~i || cache_ordered[this[ID]].splice( i, 1 );
 
+				cache_okeyval[this[ID]].length = 0;
+
 				return delete cache[this[ID]][k];
 			}
 
@@ -792,6 +809,8 @@ __lib__.define( namespace( 'Hash' ), function() {
 						item[1][1] = v;
 					else
 						cache_ordered[this[ID]].push( [o, v] );
+
+					cache_okeyval[this[ID]].length = 0;
 			}
 		},
 		stringify   : function() { return JSON.stringify( cache[this[ID]] ); },
@@ -802,7 +821,9 @@ __lib__.define( namespace( 'Hash' ), function() {
 
 
 
+
 /*~  src/Observer.js  ~*/
+
 
 __lib__.define( namespace( 'Observer' ), function() {
 	function broadcast( args, cb ) {
@@ -1081,7 +1102,9 @@ __lib__.define( namespace( 'Observer' ), function() {
 
 
 
+
 /*~  src/nativex.js  ~*/
+
 
 	util.x.cache( 'Function', function( Type ) {
 		util.def( Type.prototype, 'callback', function( conf ) {
@@ -1091,7 +1114,9 @@ __lib__.define( namespace( 'Observer' ), function() {
 
 
 
+
 /*~  src/expose.js  ~*/
+
 
 	util.iter( PACKAGE ) || ( PACKAGE = util.ENV == 'commonjs' ? module : util.global );
 
@@ -1109,6 +1134,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 // extend Function and Object natives with id8's extensions if not sandboxed
 // or sandboxed environment's natives with all m8 AND id8 extensions
 	util.x( Object, Array, Boolean, Function );
+
 
 
 
