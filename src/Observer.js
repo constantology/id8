@@ -56,7 +56,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 				return i;
 			}
 		}
-		return null;
+		return -1;
 	}
 
 	function getListener( listeners, queue, event ) {

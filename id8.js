@@ -756,7 +756,7 @@ __lib__.define( namespace( 'Hash' ), function() {
 		},
 		clear       : function() {
 			delete cache[this[ID]];
-			
+
 			cache[this[ID]]                = util.obj();
 			cache_ordered[this[ID]].length = 0;
 			cache_okeyval[this[ID]].length = 0;
@@ -883,7 +883,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 				return i;
 			}
 		}
-		return null;
+		return -1;
 	}
 
 	function getListener( listeners, queue, event ) {
