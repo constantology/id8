@@ -117,12 +117,12 @@ util.def( __lib__, 'Class', function() {
 			return get_return_value( this, Constructor.apply( this, arguments ) );
 		}
 
-		var ctor        = config.constructor,
-			super_class = config.extend,
+		var super_class = config.extend,
 			desc_chain  = config.chain === false || super_class.prototype[__chain__] === false
 						? desc_false
 						: desc_true,
 			desc_super  = get_method_descriptor( super_class.prototype, 'constructor' ),
+			ctor        = config.constructor || desc_super.value,
 			name        = ctor ? ctor[__name__] : 'Anonymous',
 			prototype   = Class.prototype = make_prototype( config ),
 			Constructor = make_method( 'parent', ctor, desc_super, 'constructor' );
@@ -178,7 +178,7 @@ util.def( __lib__, 'Class', function() {
 		if ( !super_method )
 			desc_super = desc_default_super;
 
-		if ( method.valueOf() === super_method.valueOf() ) {
+		if ( !method || method.valueOf() === super_method.valueOf() ) {
 			method     = super_method;
 			desc_super = desc_default_super;
 		}
