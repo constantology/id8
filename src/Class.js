@@ -117,7 +117,7 @@ util.def( __lib__, 'Class', function() {
 			return get_return_value( this, Constructor.apply( this, arguments ) );
 		}
 
-		var super_class = config.extend,// for some reason in webkit based browsers `super_class` is not always set, which is fudging weird!
+		var super_class = config.extend || Object,// for some reason in webkit based browsers `super_class` is not always set, which is fudging weird!
 			desc_chain  = config.chain === false || ( super_class && super_class.prototype[__chain__] === false )
 						? desc_false
 						: desc_true,
