@@ -1,2 +1,2 @@
 ;!function( util, Name, PACKAGE  ) {
-	"use strict";
+//	"use strict"; // removed because debugging in safari web inspector is impossible in strict mode!!!
