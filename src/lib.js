@@ -58,9 +58,14 @@
 	function namespace( name ) { return '^' + Name + '.' + name; }
 
 	function process_after( Class ) {
+		if ( Class.__processed__ === true ) return Class;
+
 		var after = ( internals[Class[__guid__]] || internals.empty ).after;
 
-		!Array.isArray( after ) || after.invoke( 'call', null, Class );
+		if ( Array.isArray( after ) && after.length ) {
+			after.invoke( 'call', null, Class );
+			util.def( Class, '__processed__', true, 'r' );
+		}
 
 		return Class;
 	}

@@ -66,9 +66,14 @@
 	function namespace( name ) { return '^' + Name + '.' + name; }
 
 	function process_after( Class ) {
+		if ( Class.__processed__ === true ) return Class;
+
 		var after = ( internals[Class[__guid__]] || internals.empty ).after;
 
-		!Array.isArray( after ) || after.invoke( 'call', null, Class );
+		if ( Array.isArray( after ) && after.length ) {
+			after.invoke( 'call', null, Class );
+			util.def( Class, '__processed__', true, 'r' );
+		}
 
 		return Class;
 	}
@@ -168,7 +173,13 @@ util.def( __lib__, 'define', function() {
 
 		Class       = Package[ClassName] = __lib__.Class( class_config );
 
-		Constructor = class_config.singleton ? Class.constructor : Class;
+// weird shizzle in chrome is making me have to do shizzle like thizzle!!!
+		Constructor = class_config.singleton
+					? ( Class = ( is_fun( Class )
+						? Class.create.apply( null, class_config.singleton === true ? [] : [class_config.singleton] )
+						: Class ) ).constructor
+					: Class;
+//		Constructor = class_config.singleton ? Class.constructor : Class;
 
 		util.def( Constructor.prototype, __type__, type_name, 'c', true );
 		decorate( Constructor, class_name, descriptor.noreg === true );
@@ -184,6 +195,7 @@ util.def( __lib__, 'define', function() {
 			util.define( descriptor.path, Class );
 
 		return Class;
+//		return class_config.singleton && is_fun( Class ) ? Class() : Class;
 	}
 
 	function decorate( Class, class_name, no_register ) {
@@ -321,8 +333,8 @@ util.def( __lib__, 'Class', function() {
 			return get_return_value( this, Constructor.apply( this, arguments ) );
 		}
 
-		var super_class = config.extend || Object,// for some reason in webkit based browsers `super_class` is not always set, which is fudging weird!
-			desc_chain  = config.chain === false || ( super_class && super_class.prototype[__chain__] === false )
+		var super_class = config.extend,
+			desc_chain  = config.chain === false || super_class.prototype[__chain__] === false
 						? desc_false
 						: desc_true,
 			desc_super  = get_method_descriptor( super_class.prototype, 'constructor' ),
@@ -353,9 +365,17 @@ util.def( __lib__, 'Class', function() {
 			ctor         = class_config.constructor, name,
 			super_class  = class_config.extend;
 
+// weird shizzle in chrome is making me have to do shizzle like thizzle!!!
+		if ( ( is_str( class_config.extend ) && !is_str( super_class ) ) || ( is_fun( class_config.extend ) && !is_fun( super_class ) ) )
+			super_class  = class_config.extend;
+
 // if extending then make sure we have a Class to extend from, or else extend Object
 		!is_str( super_class ) || ( super_class = get( super_class ) );
 		 is_fun( super_class ) || ( super_class = Object );
+
+// weird shizzle in chrome is making me have to do shizzle like thizzle!!!
+		 if ( is_fun( class_config.extend ) && super_class !== class_config.extend )
+			super_class  = class_config.extend;
 
 // make sure we have a constructor and if using the "extend", not Class
 		( is_fun( ctor ) && ctor !== Object ) || ( ctor = super_class.valueOf() );
@@ -461,6 +481,7 @@ util.def( __lib__, 'Class', function() {
 
 	function make_singleton( Constructor, singleton_config ) {
 		process_after( Constructor );
+
 		var instance = Constructor.create.apply( null, singleton_config === true ? [] : [].concat( singleton_config ) );
 
 		util.def( Constructor, __singleton__, util.describe( { value : instance }, 'r' ) );

@@ -117,8 +117,8 @@ util.def( __lib__, 'Class', function() {
 			return get_return_value( this, Constructor.apply( this, arguments ) );
 		}
 
-		var super_class = config.extend || Object,// for some reason in webkit based browsers `super_class` is not always set, which is fudging weird!
-			desc_chain  = config.chain === false || ( super_class && super_class.prototype[__chain__] === false )
+		var super_class = config.extend,
+			desc_chain  = config.chain === false || super_class.prototype[__chain__] === false
 						? desc_false
 						: desc_true,
 			desc_super  = get_method_descriptor( super_class.prototype, 'constructor' ),
@@ -149,9 +149,17 @@ util.def( __lib__, 'Class', function() {
 			ctor         = class_config.constructor, name,
 			super_class  = class_config.extend;
 
+// weird shizzle in chrome is making me have to do shizzle like thizzle!!!
+		if ( ( is_str( class_config.extend ) && !is_str( super_class ) ) || ( is_fun( class_config.extend ) && !is_fun( super_class ) ) )
+			super_class  = class_config.extend;
+
 // if extending then make sure we have a Class to extend from, or else extend Object
 		!is_str( super_class ) || ( super_class = get( super_class ) );
 		 is_fun( super_class ) || ( super_class = Object );
+
+// weird shizzle in chrome is making me have to do shizzle like thizzle!!!
+		 if ( is_fun( class_config.extend ) && super_class !== class_config.extend )
+			super_class  = class_config.extend;
 
 // make sure we have a constructor and if using the "extend", not Class
 		( is_fun( ctor ) && ctor !== Object ) || ( ctor = super_class.valueOf() );
@@ -257,6 +265,7 @@ util.def( __lib__, 'Class', function() {
 
 	function make_singleton( Constructor, singleton_config ) {
 		process_after( Constructor );
+
 		var instance = Constructor.create.apply( null, singleton_config === true ? [] : [].concat( singleton_config ) );
 
 		util.def( Constructor, __singleton__, util.describe( { value : instance }, 'r' ) );
