@@ -263,16 +263,6 @@ util.def( __lib__, 'Class', function() {
 		return prototype;
 	}
 
-	function make_singleton( Constructor, singleton_config ) {
-		process_after( Constructor );
-
-		var instance = Constructor.create.apply( null, singleton_config === true ? [] : [].concat( singleton_config ) );
-
-		util.def( Constructor, __singleton__, util.describe( { value : instance }, 'r' ) );
-
-		return instance;
-	}
-
 	var default_prop_names    = 'afterdefine beforeinstance chain constructor extend singleton type'.split( ' ' ).reduce( to_obj, util.obj() ),
 		desc_class_type       =  util.describe( 'class', 'r' ),
 		desc_default_super    =  util.describe( make_method( 'parent', util.noop, util.describe( util.noop, 'cw' ), 'parent' ), 'cw' ),

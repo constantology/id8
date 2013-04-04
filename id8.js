@@ -63,6 +63,17 @@
 	function is_obj( item ) { return util.ntype( item ) == 'object'; }
 	function is_str( item ) { return typeof item == 'string'; }
 
+// this has moved from withing the `__lib__.Class` closure to use in `__lib__.define` coz of weird chrome b0rk crap!!!
+	function make_singleton( Constructor, singleton_config ) {
+		process_after( Constructor );
+
+		var instance = Constructor.create.apply( null, singleton_config === true ? [] : [].concat( singleton_config ) );
+
+		util.def( Constructor, __singleton__, util.describe( { value : instance }, 'r' ) );
+
+		return instance;
+	}
+
 	function namespace( name ) { return '^' + Name + '.' + name; }
 
 	function process_after( Class ) {
@@ -173,13 +184,14 @@ util.def( __lib__, 'define', function() {
 
 		Class       = Package[ClassName] = __lib__.Class( class_config );
 
-// weird shizzle in chrome is making me have to do shizzle like thizzle!!!
-		Constructor = class_config.singleton
-					? ( Class = ( is_fun( Class )
-						? Class.create.apply( null, class_config.singleton === true ? [] : [class_config.singleton] )
-						: Class ) ).constructor
-					: Class;
-//		Constructor = class_config.singleton ? Class.constructor : Class;
+		if ( !class_config.singleton )
+			Constructor = Class;
+		else { // weird shizzle in chrome is making me have to do shizzle like thizzle!!!
+			if ( is_fun( Class ) )
+				Class = make_singleton( Class, class_config.singleton );
+
+			Constructor = Class.constructor;
+		}
 
 		util.def( Constructor.prototype, __type__, type_name, 'c', true );
 		decorate( Constructor, class_name, descriptor.noreg === true );
@@ -477,16 +489,6 @@ util.def( __lib__, 'Class', function() {
 		'parent'     in prototype || util.def( prototype, 'parent',     desc_default_super,       'w', true );
 
 		return prototype;
-	}
-
-	function make_singleton( Constructor, singleton_config ) {
-		process_after( Constructor );
-
-		var instance = Constructor.create.apply( null, singleton_config === true ? [] : [].concat( singleton_config ) );
-
-		util.def( Constructor, __singleton__, util.describe( { value : instance }, 'r' ) );
-
-		return instance;
 	}
 
 	var default_prop_names    = 'afterdefine beforeinstance chain constructor extend singleton type'.split( ' ' ).reduce( to_obj, util.obj() ),

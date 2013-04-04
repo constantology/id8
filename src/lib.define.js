@@ -23,13 +23,14 @@ util.def( __lib__, 'define', function() {
 
 		Class       = Package[ClassName] = __lib__.Class( class_config );
 
-// weird shizzle in chrome is making me have to do shizzle like thizzle!!!
-		Constructor = class_config.singleton
-					? ( Class = ( is_fun( Class )
-						? Class.create.apply( null, class_config.singleton === true ? [] : [class_config.singleton] )
-						: Class ) ).constructor
-					: Class;
-//		Constructor = class_config.singleton ? Class.constructor : Class;
+		if ( !class_config.singleton )
+			Constructor = Class;
+		else { // weird shizzle in chrome is making me have to do shizzle like thizzle!!!
+			if ( is_fun( Class ) )
+				Class = make_singleton( Class, class_config.singleton );
+
+			Constructor = Class.constructor;
+		}
 
 		util.def( Constructor.prototype, __type__, type_name, 'c', true );
 		decorate( Constructor, class_name, descriptor.noreg === true );

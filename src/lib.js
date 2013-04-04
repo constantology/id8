@@ -55,6 +55,17 @@
 	function is_obj( item ) { return util.ntype( item ) == 'object'; }
 	function is_str( item ) { return typeof item == 'string'; }
 
+// this has moved from withing the `__lib__.Class` closure to use in `__lib__.define` coz of weird chrome b0rk crap!!!
+	function make_singleton( Constructor, singleton_config ) {
+		process_after( Constructor );
+
+		var instance = Constructor.create.apply( null, singleton_config === true ? [] : [].concat( singleton_config ) );
+
+		util.def( Constructor, __singleton__, util.describe( { value : instance }, 'r' ) );
+
+		return instance;
+	}
+
 	function namespace( name ) { return '^' + Name + '.' + name; }
 
 	function process_after( Class ) {
