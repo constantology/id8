@@ -800,18 +800,18 @@ __lib__.define( namespace( 'Hash' ), function() {
 			var H = this, o = cache[H[ID]]; ctx || ( ctx = H );
 			Object.keys( o ).forEach( function( k, i ) { fn.call( ctx, o[k], k, H, i ); }, H );
 		},
-		get         : function( k ) {
+		get         : function( key ) {
 			var c = cache[this[ID]], k, v;
 
-			if ( util.has( c, k ) )
-				return c[k];
+			if ( util.has( c, key ) )
+				return c[key];
 
 // this here is dedicated to shiternet explorer
 			k = this.okeys;
 			v = this.ovalues;
 
 			return k.length
-				 ? v[k.indexOf( k )] || null
+				 ? v[k.indexOf( key )] || null
 				 : null;
 		},
 		has         : function( k ) { return util.has( cache[this[ID]], k ); },
