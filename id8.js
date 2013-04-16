@@ -5,7 +5,6 @@
 
 /*~  src/lib.js  ~*/
 
-
 	function __lib__( name_or_type ) {
 		var Class = is_fun( name_or_type ) && util.type( name_or_type ) == 'class'
 				  ? name_or_type
@@ -124,9 +123,7 @@
 
 
 
-
 /*~  src/vars.js  ~*/
-
 
 	var __chain__        = '__chain__',
 		__classname__    = '__classname__',
@@ -155,9 +152,7 @@
 
 
 
-
 /*~  src/lib.define.js  ~*/
-
 
 util.def( __lib__, 'define', function() {
 // public methods
@@ -222,9 +217,7 @@ util.def( __lib__, 'define', function() {
 
 
 
-
 /*~  src/Class.js  ~*/
-
 
 util.def( __lib__, 'Class', function() {
 // public methods
@@ -503,9 +496,7 @@ util.def( __lib__, 'Class', function() {
 
 
 
-
 /*~  src/Source.js  ~*/
-
 
 __lib__.define( namespace( 'Source' ), function() {
 	function afterdefine( Class ) {
@@ -636,9 +627,7 @@ __lib__.define( namespace( 'Source' ), function() {
 
 
 
-
 /*~  src/Callback.js  ~*/
-
 
 __lib__.define( namespace( 'Callback' ), function() {
 	function buffer() {
@@ -717,9 +706,7 @@ __lib__.define( namespace( 'Callback' ), function() {
 
 
 
-
 /*~  src/Hash.js  ~*/
-
 
 __lib__.define( namespace( 'Hash' ), function() {
 
@@ -857,9 +844,7 @@ __lib__.define( namespace( 'Hash' ), function() {
 
 
 
-
 /*~  src/Observer.js  ~*/
-
 
 __lib__.define( namespace( 'Observer' ), function() {
 	function broadcast( args, cb ) {
@@ -967,7 +952,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 		if ( event == 'ctx' || event == 'options' )
 			return observer;
 
-		var ctx, fn, options, type = util.type( listener );
+		var ctx = listeners.ctx, fn, options = listeners.options, type = util.type( listener );
 
 		switch ( type ) {
 			case type_callback :
@@ -975,14 +960,12 @@ __lib__.define( namespace( 'Observer' ), function() {
 				break;
 
 			case 'function'    : case 'array'  : case 'string' :
-				ctx = listeners.ctx;
 				fn  = listener;
 				break;
 
 			case 'nullobject'  : case 'object' :
-				ctx     = listener.ctx || listeners.ctx;
 				fn      = listener.fn;
-				options = util.got( listener, 'options' ) ? createCallbackConfig( listener.options ) : listeners.options;
+				options = options ? createCallbackConfig( options ) : options;
 				break;
 		}
 
@@ -1138,9 +1121,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 
 
 
-
 /*~  src/nativex.js  ~*/
-
 
 	util.x.cache( 'Function', function( Type ) {
 		util.def( Type.prototype, 'callback', function( conf ) {
@@ -1150,9 +1131,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 
 
 
-
 /*~  src/expose.js  ~*/
-
 
 	util.iter( PACKAGE ) || ( PACKAGE = util.ENV == 'commonjs' ? module : util.global );
 
@@ -1170,7 +1149,6 @@ __lib__.define( namespace( 'Observer' ), function() {
 // extend Function and Object natives with id8's extensions if not sandboxed
 // or sandboxed environment's natives with all m8 AND id8 extensions
 	util.x( Object, Array, Boolean, Function );
-
 
 
 

@@ -104,7 +104,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 		if ( event == 'ctx' || event == 'options' )
 			return observer;
 
-		var ctx, fn, options, type = util.type( listener );
+		var ctx = listeners.ctx, fn, options = listeners.options, type = util.type( listener );
 
 		switch ( type ) {
 			case type_callback :
@@ -112,14 +112,12 @@ __lib__.define( namespace( 'Observer' ), function() {
 				break;
 
 			case 'function'    : case 'array'  : case 'string' :
-				ctx = listeners.ctx;
 				fn  = listener;
 				break;
 
 			case 'nullobject'  : case 'object' :
-				ctx     = listener.ctx || listeners.ctx;
 				fn      = listener.fn;
-				options = util.got( listener, 'options' ) ? createCallbackConfig( listener.options ) : listeners.options;
+				options = options ? createCallbackConfig( options ) : options;
 				break;
 		}
 
