@@ -117,7 +117,8 @@ __lib__.define( namespace( 'Observer' ), function() {
 
 			case 'nullobject'  : case 'object' :
 				fn      = listener.fn;
-				options = options ? createCallbackConfig( options ) : options;
+				ctx     = listener.ctx || ctx;
+				options = util.got( listener, 'options' ) ? createCallbackConfig( listener.options ) : options;
 				break;
 		}
 
