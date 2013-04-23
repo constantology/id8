@@ -6,6 +6,7 @@
 		__mixins__       = '__mixins__',
 		__name__         = '__name__',
 		__override__     = '__override__',
+		__processing__   = '__processing__',
 		__proto__        = '__proto__',
 		__singleton__    = '__singleton__',
 		__super__        = '__super__',

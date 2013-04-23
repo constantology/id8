@@ -133,6 +133,7 @@
 		__mixins__       = '__mixins__',
 		__name__         = '__name__',
 		__override__     = '__override__',
+		__processing__   = '__processing__',
 		__proto__        = '__proto__',
 		__singleton__    = '__singleton__',
 		__super__        = '__super__',
@@ -333,9 +334,17 @@ util.def( __lib__, 'Class', function() {
 			if ( singleton( this.constructor ) )
 				return this.constructor[__singleton__];
 
-			this.constructor.valueOf() !== Constructor.valueOf() || process_before( this, arguments );
+			if ( this[__processing__] !== true ) {
+				this[__processing__] = true;
+				process_before( this, arguments );
+			}
+//			this.constructor.valueOf() !== Constructor.valueOf() || process_before( this, arguments );
 
-			return get_return_value( this, Constructor.apply( this, arguments ) );
+			var return_value = get_return_value( this, Constructor.apply( this, arguments ) );
+
+			delete this[__processing__];
+
+			return return_value;
 		}
 
 		var super_class = config.extend,
@@ -432,6 +441,10 @@ util.def( __lib__, 'Class', function() {
 		}.mimic( method, method_name );
 	}
 
+	function add_processor( fn ) {
+		if ( is_fun( fn ) && !~this.indexOf( fn ) )
+			this.push( fn );
+	}
 	function make_processable( Class, config ) {
 		var after = [], before = [], super_class = internals[config.extend[__guid__]];
 
@@ -441,12 +454,12 @@ util.def( __lib__, 'Class', function() {
 		};
 
 		if ( super_class ) {
-			!Array.isArray( super_class.after  ) || after.push.apply(  after,  super_class.after  );
-			!Array.isArray( super_class.before ) || before.push.apply( before, super_class.before );
+			!Array.isArray( super_class.after  ) || super_class.after.forEach(  add_processor, after  );
+			!Array.isArray( super_class.before ) || super_class.before.forEach( add_processor, before );
 		}
 
-		!is_fun( config.afterdefine    ) || !!~after.indexOf(  config.afterdefine    ) || after.push(  config.afterdefine    );
-		!is_fun( config.beforeinstance ) || !!~before.indexOf( config.beforeinstance ) || before.push( config.beforeinstance );
+		add_processor.call( after, config.afterdefine );
+		add_processor.call( before, config.beforeinstance );
 
 		return Class;
 	}
