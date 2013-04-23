@@ -224,8 +224,8 @@ util.def( __lib__, 'Class', function() {
 			!Array.isArray( super_class.before ) || before.push.apply( before, super_class.before );
 		}
 
-		!is_fun( config.afterdefine    ) || after.push(  config.afterdefine    );
-		!is_fun( config.beforeinstance ) || before.push( config.beforeinstance );
+		!is_fun( config.afterdefine    ) || !!~after.indexOf(  config.afterdefine    ) || after.push(  config.afterdefine    );
+		!is_fun( config.beforeinstance ) || !!~before.indexOf( config.beforeinstance ) || before.push( config.beforeinstance );
 
 		return Class;
 	}
