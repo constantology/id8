@@ -363,13 +363,13 @@ util.def( __lib__, 'Class', function() {
 			.def( Class,     __super__,  desc_super,         true )
 			.def( prototype, __chain__,  desc_chain,         true );
 
-		make_processable( Class, config );
-
 // this is over-written by id8.define, unless the Class was not created using id8.define
 // this will allow us to try and keep things as nice as possible.
 		   util.got( anon_list, name )
 		|| util.def( Class, __classname__, name, 'cw' )
 			   .def( Class, 'displayName', name, 'cw' );
+
+		make_processable( Class, config );
 
 		return decorate( Class.mimic( ctor ) );
 	}
@@ -442,8 +442,7 @@ util.def( __lib__, 'Class', function() {
 	}
 
 	function add_processor( fn ) {
-		if ( is_fun( fn ) && !~this.indexOf( fn ) )
-			this.push( fn );
+		!is_fun( fn ) || this.indexOf( fn ) > -1 || this.push( fn );
 	}
 	function make_processable( Class, config ) {
 		var after = [], before = [], super_class = internals[config.extend[__guid__]];
