@@ -6,5 +6,7 @@ npm-debug.log
 
 *.bak*
 *.local*
+*.sh
+.nodemonignore
 
 __ignore__
