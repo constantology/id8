@@ -41,7 +41,7 @@
 		return null;
 	}
 
-	function get_return_value( ctx, value ) { return ctx[__chain__] === true && value === UNDEF ? ctx : value; }
+//	function get_return_value( ctx, value ) { return ctx[__chain__] === true && value === UNDEF ? ctx : value; }
 
 	function is( instance, Class ) {
 		switch ( typeof Class ) {

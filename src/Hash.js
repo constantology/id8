@@ -80,7 +80,7 @@ __lib__.define( namespace( 'Hash' ), function() {
 		get         : function( key ) {
 			var c = cache[this[ID]], k, v;
 
-			if ( util.has( c, key ) )
+			if ( key in c )
 				return c[key];
 
 // this here is dedicated to shiternet explorer
@@ -91,14 +91,14 @@ __lib__.define( namespace( 'Hash' ), function() {
 				 ? v[k.indexOf( key )] || null
 				 : null;
 		},
-		has         : function( k ) { return util.has( cache[this[ID]], k ); },
+		has         : function( k ) { return k in cache[this[ID]]; },
 		key         : function( v ) { return Object.key( cache[this[ID]], v ); },
 		reduce      : function( fn, val ) {
 			var H = this, o = cache[H[ID]];
 			return Object.keys( o ).reduce( function( res, k, i ) { return fn.call( H, res, o[k], k, H, i ); }, val );
 		},
 		remove      : function( k ) {
-			if ( util.has( cache[this[ID]], k ) ) {
+			if ( k in cache[this[ID]] ) {
 				var i = get_ordered_item_index( this[ID], k );
 
 				!~i || cache_ordered[this[ID]].splice( i, 1 );

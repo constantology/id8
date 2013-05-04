@@ -13,18 +13,17 @@ __lib__.define( namespace( 'Callback' ), function() {
 		constructor : function Callback( fn, conf ) {
 			util.copy( this, conf || {} );
 
-			var desc = util.describe( null, 'w' ),
-				fire = ( util.type( this.buffer ) == 'number' ? buffer : this.exec ).bind( this );
+			var fire = this.fire = this.handleEvent_ = ( util.type( this.buffer ) == 'number' ? buffer : this.exec ).bind( this );
 
-			desc.value = fn;   util.def( this, 'fn',           desc );
-			desc.value = this; util.def( fire, 'cb',           desc );
-			desc.value = fire; util.def( this, 'fire',         desc );
-							   util.def( this, 'handleEvent_', desc );
-
+			this.fn  = fn;
+			fire.cb  = this;
 			this.args || ( this.args = [] );
 			this.ctx  || ( this.ctx  = this );
-			util.type( this.delay ) == 'number' || ( this.delay = null );
-			util.type( this.times ) == 'number' && this.times > 0 || ( this.times = 0 );
+
+			if ( typeof this.delay != 'number' || isNaN( this.delay ) )
+				this.delay = null;
+			if ( typeof this.times != 'number' || isNaN( this.times ) || this.times < 0 )
+				this.times = 0;
 
 			this.enable();
 		},

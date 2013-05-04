@@ -48,7 +48,7 @@
 		return null;
 	}
 
-	function get_return_value( ctx, value ) { return ctx[__chain__] === true && value === UNDEF ? ctx : value; }
+//	function get_return_value( ctx, value ) { return ctx[__chain__] === true && value === UNDEF ? ctx : value; }
 
 	function is( instance, Class ) {
 		switch ( typeof Class ) {
@@ -138,8 +138,8 @@
 		__singleton__    = '__singleton__',
 		__super__        = '__super__',
 		__type__         = '__type__',
-		UNDEF, Name_lc   = Name.toLowerCase(),
-		anon_list        = Function.anon_list,
+		UNDEF, Name_lc   = Name.toLowerCase(), OP = Object.prototype,
+		anon_list        = Function.anon_list || util.obj(),
 		internals        = util.obj(),
 		re_invalid_chars = /[^A-Za-z0-9_\.$<>\[\]\{\}]/g,
 		registered_alias = util.obj(),
@@ -277,7 +277,7 @@ util.def( __lib__, 'Class', function() {
 
 // Class instance method helpers
 	function get_args( args, fn_curr, fn_prev ) {
-		if ( args.length && util.tostr( args[0] ) === '[object Arguments]' ) {
+		if ( args.length && OP.toString.call( args[0] ) === '[object Arguments]' ) {
 			if ( args.length < 2 && arguments.length > 1 ) {
 				if ( fn_curr in internal_method_names )
 					return get_args( args[0] );
@@ -305,7 +305,7 @@ util.def( __lib__, 'Class', function() {
 // Class construction methods
 	function add( key, value ) {
 		var desc;
-		switch ( util.ntype( value ) ) {
+		switch ( typeof value ) {
 			case 'object'   : desc = util.type( value ) == 'descriptor' ? value : util.describe( { value : value }, 'cw' );          break;
 			case 'function' : desc = util.describe( make_method( 'parent', value, get_method_descriptor( this, key ), key ), 'cw' ); break;
 			default         : desc = util.describe( value, 'cew' );
@@ -340,11 +340,12 @@ util.def( __lib__, 'Class', function() {
 			}
 //			this.constructor.valueOf() !== Constructor.valueOf() || process_before( this, arguments );
 
-			var return_value = get_return_value( this, Constructor.apply( this, arguments ) );
+//			var return_value = get_return_value( this, Constructor.apply( this, arguments ) );
+			var return_value = Constructor.apply( this, arguments );
 
 			delete this[__processing__];
 
-			return return_value;
+			return this[__chain__] === true && return_value === UNDEF ? this : return_value;
 		}
 
 		var super_class = config.extend,
@@ -365,7 +366,7 @@ util.def( __lib__, 'Class', function() {
 
 // this is over-written by id8.define, unless the Class was not created using id8.define
 // this will allow us to try and keep things as nice as possible.
-		   util.got( anon_list, name )
+		   name in anon_list
 		|| util.def( Class, __classname__, name, 'cw' )
 			   .def( Class, 'displayName', name, 'cw' );
 
@@ -397,7 +398,7 @@ util.def( __lib__, 'Class', function() {
 // set a type for this Class' instances if one is not defined
 		util.exists( class_config.type )
 		|| ctor === Object
-		|| util.got( anon_list, ( name = String( ctor[__name__] ) ) )
+		|| ( name = String( ctor[__name__] ) ) in anon_list
 		|| ( class_config.type = name.toLowerCase() );
 
 		class_config.constructor = ctor && ctor !== Object ? ctor : super_class;
@@ -408,7 +409,7 @@ util.def( __lib__, 'Class', function() {
 
 	function make_method( super_name, method, desc_super, method_name ) {
 		var super_method = null;                                                // noinspection FallthroughInSwitchStatementJS
-		switch ( util.ntype( desc_super ) ) {
+		switch ( typeof desc_super ) {
 			case 'function' : desc_super   = util.describe( desc_super, 'cw' ); // allow fall-through
 			case 'object'   : super_method = desc_super.value; break;
 		}
@@ -422,22 +423,25 @@ util.def( __lib__, 'Class', function() {
 		}
 
 		return function Class_instance_method() {
-			var desc             = get_method_descriptor( this, super_name ),
+			var // desc             = get_method_descriptor( this, super_name ),
 				previous_method  = this[__method__],
 				return_value,
-				no_update_method = util.got( internal_method_names, previous_method, method_name );
+				no_update_method = previous_method in internal_method_names || method_name in internal_method_names,
+				this_super       = this[super_name];
 
-			set_super_method( this, super_name, desc_super );
+			this[super_name] = ( desc_super || desc_default_super ).value;
 
-			no_update_method || util.def( this, __method__, method_name, 'w', true );
+			if ( !no_update_method )
+				this[__method__] = method_name;
 
-			return_value = ( method || desc_super.value ).apply( this, get_args( arguments, method_name, previous_method ) );
+			return_value = ( method || this[super_name] ).apply( this, get_args( arguments, method_name, previous_method ) );
 
-			no_update_method || util.def( this, __method__, previous_method, 'w', true );
+			if ( !no_update_method )
+				this[__method__] = previous_method;
 
-			set_super_method( this, super_name, desc );
+			this[super_name] = this_super;
 
-			return get_return_value( this, return_value );
+			return this[__chain__] === true && return_value === UNDEF ? this : return_value;
 		}.mimic( method, method_name );
 	}
 
@@ -489,9 +493,12 @@ util.def( __lib__, 'Class', function() {
 
 		!is_str( class_config.type ) || util.def( prototype, __type__, class_config.type, 'c', true );
 
-		__override__ in prototype || util.def( prototype, __override__, override_instance_method, 'w', true );
-		'original'   in prototype || util.def( prototype, 'original',   desc_default_super,       'w', true );
-		'parent'     in prototype || util.def( prototype, 'parent',     desc_default_super,       'w', true );
+		if ( !( __override__ in prototype ) )
+			prototype[__override__] = override_instance_method;
+		if ( !( 'original'   in prototype ) )
+			prototype.original = desc_default_super.value;
+		if ( !( 'parent'     in prototype ) )
+			prototype.parent   = desc_default_super.value;
 
 		return prototype;
 	}
@@ -526,14 +533,15 @@ __lib__.define( namespace( 'Source' ), function() {
 	}
 
 	function beforeinstance( Class, instance, args ) {
-		util.def( instance, '$mx', { value : Class[__mixins__] }, 'w', true );
+		instance.$mx = Class[__mixins__];
 	}
 
 	function decorate( Class ) {
-		util.def( Class, __mixins__, { value : util.obj() },     'w', true );
-		util.def( Class,  'mixin',   mixins_apply.bind( Class ), 'w', true );
+		Class[__mixins__] = util.obj();
+		Class.mixin       = mixins_apply.bind( Class );
 
-		is_fun( Class.prototype.mixin ) || util.def( Class.prototype, 'mixin', mixin_exec, 'w', true );
+		if ( typeof Class.prototype.mixin != 'function' )
+			Class.prototype.mixin = mixin_exec;
 
 		return Class;
 	}
@@ -543,7 +551,7 @@ __lib__.define( namespace( 'Source' ), function() {
 	}
 
 	function mixin_apply( Class, mixin, name ) {
-		if ( util.got( Class[__mixins__], name ) )
+		if ( name in Class[__mixins__] )
 			return Class;
 
 		//noinspection FallthroughInSwitchStatementJS
@@ -557,7 +565,7 @@ __lib__.define( namespace( 'Source' ), function() {
  // Since this is a mixin and not a super class we only want to add properties/methods that do not already exist to the Class
  // The rest can be called within the existing method as this.mixin( mixin_name, arguments );
 			Object.getOwnPropertyNames( mixin ).map( function( property ) {
-				property in reserved_props || util.got( this, property ) || Class.add( property, util.description( mixin, property ) );
+				property in reserved_props || property in this || Class.add( property, util.description( mixin, property ) );
 			}, Class.prototype );
 
 			util.def( Class[__mixins__], get_name( name ), { value : mixin }, 'e', true );
@@ -577,7 +585,8 @@ __lib__.define( namespace( 'Source' ), function() {
 
 	function mixin_exec( name, args ) {
 		var mx     = this.$mx,
-			method = this[__method__];
+			method = this[__method__],
+			return_value;
 
 		switch ( arguments.length ) {
 			case 2  :            break;
@@ -593,10 +602,13 @@ __lib__.define( namespace( 'Source' ), function() {
 				this.mixin( name, args );
 			}, this );
 
-			return get_return_value( this, UNDEF );
+//			return get_return_value( this, UNDEF );
 		}
+		else
+			return_value = mx[name] && is_fun( mx[name][method] ) ? mx[name][method].apply( this, args ) : UNDEF;
 
-		return get_return_value( this, ( mx[name] && is_fun( mx[name][method] ) ? mx[name][method].apply( this, args ) : UNDEF ) );
+		return this[__chain__] === true && return_value === UNDEF ? this : return_value;
+//		return get_return_value( this, ( mx[name] && is_fun( mx[name][method] ) ? mx[name][method].apply( this, args ) : UNDEF ) );
 	}
 
 	return {
@@ -656,18 +668,17 @@ __lib__.define( namespace( 'Callback' ), function() {
 		constructor : function Callback( fn, conf ) {
 			util.copy( this, conf || {} );
 
-			var desc = util.describe( null, 'w' ),
-				fire = ( util.type( this.buffer ) == 'number' ? buffer : this.exec ).bind( this );
+			var fire = this.fire = this.handleEvent_ = ( util.type( this.buffer ) == 'number' ? buffer : this.exec ).bind( this );
 
-			desc.value = fn;   util.def( this, 'fn',           desc );
-			desc.value = this; util.def( fire, 'cb',           desc );
-			desc.value = fire; util.def( this, 'fire',         desc );
-							   util.def( this, 'handleEvent_', desc );
-
+			this.fn  = fn;
+			fire.cb  = this;
 			this.args || ( this.args = [] );
 			this.ctx  || ( this.ctx  = this );
-			util.type( this.delay ) == 'number' || ( this.delay = null );
-			util.type( this.times ) == 'number' && this.times > 0 || ( this.times = 0 );
+
+			if ( typeof this.delay != 'number' || isNaN( this.delay ) )
+				this.delay = null;
+			if ( typeof this.times != 'number' || isNaN( this.times ) || this.times < 0 )
+				this.times = 0;
 
 			this.enable();
 		},
@@ -802,7 +813,7 @@ __lib__.define( namespace( 'Hash' ), function() {
 		get         : function( key ) {
 			var c = cache[this[ID]], k, v;
 
-			if ( util.has( c, key ) )
+			if ( key in c )
 				return c[key];
 
 // this here is dedicated to shiternet explorer
@@ -813,14 +824,14 @@ __lib__.define( namespace( 'Hash' ), function() {
 				 ? v[k.indexOf( key )] || null
 				 : null;
 		},
-		has         : function( k ) { return util.has( cache[this[ID]], k ); },
+		has         : function( k ) { return k in cache[this[ID]]; },
 		key         : function( v ) { return Object.key( cache[this[ID]], v ); },
 		reduce      : function( fn, val ) {
 			var H = this, o = cache[H[ID]];
 			return Object.keys( o ).reduce( function( res, k, i ) { return fn.call( H, res, o[k], k, H, i ); }, val );
 		},
 		remove      : function( k ) {
-			if ( util.has( cache[this[ID]], k ) ) {
+			if ( k in cache[this[ID]] ) {
 				var i = get_ordered_item_index( this[ID], k );
 
 				!~i || cache_ordered[this[ID]].splice( i, 1 );
@@ -884,7 +895,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 			default        : config = util.obj();
 		}
 
-		if ( util.got( config, 'single' ) ) {
+		if ( 'single' in config ) {
 			config.times = !!config.single ? 1 : 0;
 			delete config.single;
 		}
@@ -948,7 +959,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 		if ( !listeners.ctx )
 			listeners.ctx = observer;
 
-		if ( util.got( listeners, 'options' ) )
+		if ( 'options' in listeners )
 			listeners.options = createCallbackConfig( listeners.options );
 
 		return Object.reduce( listeners, observe_type, observer );
@@ -978,7 +989,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 			case 'nullobject'  : case 'object' :
 				fn      = listener.fn;
 				ctx     = listener.ctx || ctx;
-				options = util.got( listener, 'options' ) ? createCallbackConfig( listener.options ) : options;
+				options = 'options' in listener ? createCallbackConfig( listener.options ) : options;
 				break;
 		}
 
@@ -1080,7 +1091,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 				default            : switch( type ) {
 					case 'object'     :
 					case 'nullobject' :
-						if ( util.has( fn, 'handleEvent' ) ) {
+						if ( 'handleEvent' in fn ) {
 							if ( is_obj( ctx ) && options === U )
 								options = ctx;
 							ctx = fn;

@@ -14,14 +14,15 @@ __lib__.define( namespace( 'Source' ), function() {
 	}
 
 	function beforeinstance( Class, instance, args ) {
-		util.def( instance, '$mx', { value : Class[__mixins__] }, 'w', true );
+		instance.$mx = Class[__mixins__];
 	}
 
 	function decorate( Class ) {
-		util.def( Class, __mixins__, { value : util.obj() },     'w', true );
-		util.def( Class,  'mixin',   mixins_apply.bind( Class ), 'w', true );
+		Class[__mixins__] = util.obj();
+		Class.mixin       = mixins_apply.bind( Class );
 
-		is_fun( Class.prototype.mixin ) || util.def( Class.prototype, 'mixin', mixin_exec, 'w', true );
+		if ( typeof Class.prototype.mixin != 'function' )
+			Class.prototype.mixin = mixin_exec;
 
 		return Class;
 	}
@@ -31,7 +32,7 @@ __lib__.define( namespace( 'Source' ), function() {
 	}
 
 	function mixin_apply( Class, mixin, name ) {
-		if ( util.got( Class[__mixins__], name ) )
+		if ( name in Class[__mixins__] )
 			return Class;
 
 		//noinspection FallthroughInSwitchStatementJS
@@ -45,7 +46,7 @@ __lib__.define( namespace( 'Source' ), function() {
  // Since this is a mixin and not a super class we only want to add properties/methods that do not already exist to the Class
  // The rest can be called within the existing method as this.mixin( mixin_name, arguments );
 			Object.getOwnPropertyNames( mixin ).map( function( property ) {
-				property in reserved_props || util.got( this, property ) || Class.add( property, util.description( mixin, property ) );
+				property in reserved_props || property in this || Class.add( property, util.description( mixin, property ) );
 			}, Class.prototype );
 
 			util.def( Class[__mixins__], get_name( name ), { value : mixin }, 'e', true );
@@ -65,7 +66,8 @@ __lib__.define( namespace( 'Source' ), function() {
 
 	function mixin_exec( name, args ) {
 		var mx     = this.$mx,
-			method = this[__method__];
+			method = this[__method__],
+			return_value;
 
 		switch ( arguments.length ) {
 			case 2  :            break;
@@ -81,10 +83,13 @@ __lib__.define( namespace( 'Source' ), function() {
 				this.mixin( name, args );
 			}, this );
 
-			return get_return_value( this, UNDEF );
+//			return get_return_value( this, UNDEF );
 		}
+		else
+			return_value = mx[name] && is_fun( mx[name][method] ) ? mx[name][method].apply( this, args ) : UNDEF;
 
-		return get_return_value( this, ( mx[name] && is_fun( mx[name][method] ) ? mx[name][method].apply( this, args ) : UNDEF ) );
+		return this[__chain__] === true && return_value === UNDEF ? this : return_value;
+//		return get_return_value( this, ( mx[name] && is_fun( mx[name][method] ) ? mx[name][method].apply( this, args ) : UNDEF ) );
 	}
 
 	return {

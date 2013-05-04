@@ -55,7 +55,7 @@ util.def( __lib__, 'Class', function() {
 
 // Class instance method helpers
 	function get_args( args, fn_curr, fn_prev ) {
-		if ( args.length && util.tostr( args[0] ) === '[object Arguments]' ) {
+		if ( args.length && OP.toString.call( args[0] ) === '[object Arguments]' ) {
 			if ( args.length < 2 && arguments.length > 1 ) {
 				if ( fn_curr in internal_method_names )
 					return get_args( args[0] );
@@ -83,7 +83,7 @@ util.def( __lib__, 'Class', function() {
 // Class construction methods
 	function add( key, value ) {
 		var desc;
-		switch ( util.ntype( value ) ) {
+		switch ( typeof value ) {
 			case 'object'   : desc = util.type( value ) == 'descriptor' ? value : util.describe( { value : value }, 'cw' );          break;
 			case 'function' : desc = util.describe( make_method( 'parent', value, get_method_descriptor( this, key ), key ), 'cw' ); break;
 			default         : desc = util.describe( value, 'cew' );
@@ -118,11 +118,12 @@ util.def( __lib__, 'Class', function() {
 			}
 //			this.constructor.valueOf() !== Constructor.valueOf() || process_before( this, arguments );
 
-			var return_value = get_return_value( this, Constructor.apply( this, arguments ) );
+//			var return_value = get_return_value( this, Constructor.apply( this, arguments ) );
+			var return_value = Constructor.apply( this, arguments );
 
 			delete this[__processing__];
 
-			return return_value;
+			return this[__chain__] === true && return_value === UNDEF ? this : return_value;
 		}
 
 		var super_class = config.extend,
@@ -143,7 +144,7 @@ util.def( __lib__, 'Class', function() {
 
 // this is over-written by id8.define, unless the Class was not created using id8.define
 // this will allow us to try and keep things as nice as possible.
-		   util.got( anon_list, name )
+		   name in anon_list
 		|| util.def( Class, __classname__, name, 'cw' )
 			   .def( Class, 'displayName', name, 'cw' );
 
@@ -175,7 +176,7 @@ util.def( __lib__, 'Class', function() {
 // set a type for this Class' instances if one is not defined
 		util.exists( class_config.type )
 		|| ctor === Object
-		|| util.got( anon_list, ( name = String( ctor[__name__] ) ) )
+		|| ( name = String( ctor[__name__] ) ) in anon_list
 		|| ( class_config.type = name.toLowerCase() );
 
 		class_config.constructor = ctor && ctor !== Object ? ctor : super_class;
@@ -186,7 +187,7 @@ util.def( __lib__, 'Class', function() {
 
 	function make_method( super_name, method, desc_super, method_name ) {
 		var super_method = null;                                                // noinspection FallthroughInSwitchStatementJS
-		switch ( util.ntype( desc_super ) ) {
+		switch ( typeof desc_super ) {
 			case 'function' : desc_super   = util.describe( desc_super, 'cw' ); // allow fall-through
 			case 'object'   : super_method = desc_super.value; break;
 		}
@@ -200,22 +201,25 @@ util.def( __lib__, 'Class', function() {
 		}
 
 		return function Class_instance_method() {
-			var desc             = get_method_descriptor( this, super_name ),
+			var // desc             = get_method_descriptor( this, super_name ),
 				previous_method  = this[__method__],
 				return_value,
-				no_update_method = util.got( internal_method_names, previous_method, method_name );
+				no_update_method = previous_method in internal_method_names || method_name in internal_method_names,
+				this_super       = this[super_name];
 
-			set_super_method( this, super_name, desc_super );
+			this[super_name] = ( desc_super || desc_default_super ).value;
 
-			no_update_method || util.def( this, __method__, method_name, 'w', true );
+			if ( !no_update_method )
+				this[__method__] = method_name;
 
-			return_value = ( method || desc_super.value ).apply( this, get_args( arguments, method_name, previous_method ) );
+			return_value = ( method || this[super_name] ).apply( this, get_args( arguments, method_name, previous_method ) );
 
-			no_update_method || util.def( this, __method__, previous_method, 'w', true );
+			if ( !no_update_method )
+				this[__method__] = previous_method;
 
-			set_super_method( this, super_name, desc );
+			this[super_name] = this_super;
 
-			return get_return_value( this, return_value );
+			return this[__chain__] === true && return_value === UNDEF ? this : return_value;
 		}.mimic( method, method_name );
 	}
 
@@ -267,9 +271,12 @@ util.def( __lib__, 'Class', function() {
 
 		!is_str( class_config.type ) || util.def( prototype, __type__, class_config.type, 'c', true );
 
-		__override__ in prototype || util.def( prototype, __override__, override_instance_method, 'w', true );
-		'original'   in prototype || util.def( prototype, 'original',   desc_default_super,       'w', true );
-		'parent'     in prototype || util.def( prototype, 'parent',     desc_default_super,       'w', true );
+		if ( !( __override__ in prototype ) )
+			prototype[__override__] = override_instance_method;
+		if ( !( 'original'   in prototype ) )
+			prototype.original = desc_default_super.value;
+		if ( !( 'parent'     in prototype ) )
+			prototype.parent   = desc_default_super.value;
 
 		return prototype;
 	}

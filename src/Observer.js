@@ -24,7 +24,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 			default        : config = util.obj();
 		}
 
-		if ( util.got( config, 'single' ) ) {
+		if ( 'single' in config ) {
 			config.times = !!config.single ? 1 : 0;
 			delete config.single;
 		}
@@ -88,7 +88,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 		if ( !listeners.ctx )
 			listeners.ctx = observer;
 
-		if ( util.got( listeners, 'options' ) )
+		if ( 'options' in listeners )
 			listeners.options = createCallbackConfig( listeners.options );
 
 		return Object.reduce( listeners, observe_type, observer );
@@ -118,7 +118,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 			case 'nullobject'  : case 'object' :
 				fn      = listener.fn;
 				ctx     = listener.ctx || ctx;
-				options = util.got( listener, 'options' ) ? createCallbackConfig( listener.options ) : options;
+				options = 'options' in listener ? createCallbackConfig( listener.options ) : options;
 				break;
 		}
 
@@ -220,7 +220,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 				default            : switch( type ) {
 					case 'object'     :
 					case 'nullobject' :
-						if ( util.has( fn, 'handleEvent' ) ) {
+						if ( 'handleEvent' in fn ) {
 							if ( is_obj( ctx ) && options === U )
 								options = ctx;
 							ctx = fn;
