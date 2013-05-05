@@ -1,5 +1,5 @@
 	function __lib__( name_or_type ) {
-		var Class = is_fun( name_or_type ) && util.type( name_or_type ) == 'class'
+		var Class = typeof name_or_type == 'function' && util.type( name_or_type ) == 'class'
 				  ? name_or_type
 				  : get( name_or_type );
 
@@ -51,9 +51,7 @@
 		return false;
 	}
 
-	function is_fun( item ) { return typeof item == 'function'; }
 	function is_obj( item ) { return util.ntype( item ) == 'object'; }
-	function is_str( item ) { return typeof item == 'string'; }
 
 // this has moved from withing the `__lib__.Class` closure to use in `__lib__.define` coz of weird chrome b0rk crap!!!
 	function make_singleton( Constructor, singleton_config ) {

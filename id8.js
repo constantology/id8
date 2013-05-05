@@ -6,7 +6,7 @@
 /*~  src/lib.js  ~*/
 
 	function __lib__( name_or_type ) {
-		var Class = is_fun( name_or_type ) && util.type( name_or_type ) == 'class'
+		var Class = typeof name_or_type == 'function' && util.type( name_or_type ) == 'class'
 				  ? name_or_type
 				  : get( name_or_type );
 
@@ -58,9 +58,7 @@
 		return false;
 	}
 
-	function is_fun( item ) { return typeof item == 'function'; }
 	function is_obj( item ) { return util.ntype( item ) == 'object'; }
-	function is_str( item ) { return typeof item == 'string'; }
 
 // this has moved from withing the `__lib__.Class` closure to use in `__lib__.define` coz of weird chrome b0rk crap!!!
 	function make_singleton( Constructor, singleton_config ) {
@@ -183,7 +181,7 @@ util.def( __lib__, 'define', function() {
 		if ( !class_config.singleton )
 			Constructor = Class;
 		else { // weird shizzle in chrome is making me have to do shizzle like thizzle!!!
-			if ( is_fun( Class ) )
+			if ( typeof Class == 'function' )
 				Class = make_singleton( Class, class_config.singleton );
 
 			Constructor = Class.constructor;
@@ -199,11 +197,11 @@ util.def( __lib__, 'define', function() {
 
 		class_config.singleton || process_after( Constructor );
 
-		if ( is_str( descriptor.path ) && util.AMD )
+		if ( typeof descriptor.path == 'string' && util.AMD )
 			util.define( descriptor.path, Class );
 
 		return Class;
-//		return class_config.singleton && is_fun( Class ) ? Class() : Class;
+//		return class_config.singleton && typeof Class == 'function' ? Class() : Class;
 	}
 
 	function decorate( Class, class_name, no_register ) {
@@ -241,7 +239,7 @@ util.def( __lib__, 'Class', function() {
 			for ( name in name_current )
 				!util.has( name_current, name ) || alias.call( this, name, name_current[name] );
 		}
-		else if ( is_fun( proto[name_current] ) )
+		else if ( typeof proto[name_current] == 'function' )
 			util.def( proto, name_alias, get_method_descriptor( proto, name_current ), true );
 
 		return this;
@@ -260,14 +258,14 @@ util.def( __lib__, 'Class', function() {
 			for ( name in method )
 				!util.has( method, name ) || override.call( this, name, method[name] );
 		}
-		else if ( is_fun( method ) )
+		else if ( typeof method == 'function' )
 			proto[name] = make_method( 'original', method, get_method_descriptor( proto, name ), name );
 
 		return this;
 	}
 
 	function override_instance_method( name, method ) {
-		if ( is_fun( method ) )
+		if ( typeof method == 'function' )
 			this[name] = make_method( 'original', method, get_method_descriptor( this, name ), name );
 
 		return this;
@@ -290,7 +288,7 @@ util.def( __lib__, 'Class', function() {
 
 	function get_method_descriptor( o, k ) {
 		var desc = Object.getOwnPropertyDescriptor( o, k )
-				|| ( is_fun( o[k] )
+				|| ( typeof o[k] == 'function'
 				   ? util.describe( o[k], 'cw' )
 				   : desc_default_super );
 		desc.writable = true;
@@ -381,19 +379,21 @@ util.def( __lib__, 'Class', function() {
 			super_class  = class_config.extend;
 
 // weird shizzle in chrome is making me have to do shizzle like thizzle!!!
-		if ( ( is_str( class_config.extend ) && !is_str( super_class ) ) || ( is_fun( class_config.extend ) && !is_fun( super_class ) ) )
+		if ( ( typeof class_config.extend == 'string' && typeof super_class != 'string' ) || ( typeof class_config.extend == 'function' && typeof super_class != 'function' ) )
 			super_class  = class_config.extend;
 
 // if extending then make sure we have a Class to extend from, or else extend Object
-		!is_str( super_class ) || ( super_class = get( super_class ) );
-		 is_fun( super_class ) || ( super_class = Object );
+		if ( typeof super_class == 'string' )
+			super_class = get( super_class );
+		if ( typeof super_class != 'function' )
+			super_class = Object;
 
 // weird shizzle in chrome is making me have to do shizzle like thizzle!!!
-		 if ( is_fun( class_config.extend ) && super_class !== class_config.extend )
+		 if ( typeof class_config.extend == 'function' && super_class !== class_config.extend )
 			super_class  = class_config.extend;
 
 // make sure we have a constructor and if using the "extend", not Class
-		( is_fun( ctor ) && ctor !== Object ) || ( ctor = super_class.valueOf() );
+		( typeof ctor == 'function' && ctor !== Object ) || ( ctor = super_class.valueOf() );
 
 // set a type for this Class' instances if one is not defined
 		util.exists( class_config.type )
@@ -446,7 +446,7 @@ util.def( __lib__, 'Class', function() {
 	}
 
 	function add_processor( fn ) {
-		!is_fun( fn ) || this.indexOf( fn ) > -1 || this.push( fn );
+		typeof fn != 'function' || this.indexOf( fn ) > -1 || this.push( fn );
 	}
 	function make_processable( Class, config ) {
 		var after = [], before = [], super_class = internals[config.extend[__guid__]];
@@ -487,11 +487,11 @@ util.def( __lib__, 'Class', function() {
 // that has no Super Class, without throwing any errors...
 		Object.getOwnPropertyNames( prototype ).forEach( function( key ) {
 // skip non-methods and already processed properties
-			 key in processed    || key in internal_method_names ||
-			!is_fun( this[key] ) || add.call( this, key, util.describe( make_method( 'parent', this[key], desc_default_super, key ), 'cw' ) );
+			key in processed || key in internal_method_names ||
+			typeof this[key] != 'function' || add.call( this, key, util.describe( make_method( 'parent', this[key], desc_default_super, key ), 'cw' ) );
 		}, prototype );
 
-		!is_str( class_config.type ) || util.def( prototype, __type__, class_config.type, 'c', true );
+		typeof class_config.type != 'string' || util.def( prototype, __type__, class_config.type, 'c', true );
 
 		if ( !( __override__ in prototype ) )
 			prototype[__override__] = override_instance_method;
@@ -595,7 +595,7 @@ __lib__.define( namespace( 'Source' ), function() {
 			default : args = Array.coerce( arguments, 1 );
 		}
 
-		if ( !is_str( name ) ) { // warning! doing it this way cannot guarantee order of execution!
+		if ( typeof name != 'string' ) { // warning! doing it this way cannot guarantee order of execution!
 			args = name;
 
 			Object.getOwnPropertyNames( mx ).map( function( name ) {
@@ -605,10 +605,10 @@ __lib__.define( namespace( 'Source' ), function() {
 //			return get_return_value( this, UNDEF );
 		}
 		else
-			return_value = mx[name] && is_fun( mx[name][method] ) ? mx[name][method].apply( this, args ) : UNDEF;
+			return_value = mx[name] && typeof mx[name][method] == 'function' ? mx[name][method].apply( this, args ) : UNDEF;
 
 		return this[__chain__] === true && return_value === UNDEF ? this : return_value;
-//		return get_return_value( this, ( mx[name] && is_fun( mx[name][method] ) ? mx[name][method].apply( this, args ) : UNDEF ) );
+//		return get_return_value( this, ( mx[name] && typeof mx[name][method] == 'function' ? mx[name][method].apply( this, args ) : UNDEF ) );
 	}
 
 	return {
@@ -633,7 +633,7 @@ __lib__.define( namespace( 'Source' ), function() {
 // constructor methods
 		applyConfig : function( config ) {
 			!is_obj( config ) || Object.keys( config ).forEach( function( key ) {
-				if ( is_fun( config[key] ) && is_fun( this[key] ) ) // this allows you to override a method for a
+				if ( typeof config[key] == 'function' && typeof this[key] == 'function' ) // this allows you to override a method for a
 					this[__override__]( key, config[key] );         // specific instance of a Class, rather than require
 				else                                                // you extend the Class for a few minor changes
 					this[key] = config[key];                        // NB: can also be achieved by creating a `singleton`
@@ -871,7 +871,7 @@ __lib__.define( namespace( 'Hash' ), function() {
 
 __lib__.define( namespace( 'Observer' ), function() {
 	function broadcast( args, cb ) {
-		if ( !is_fun( cb.handleEvent ) ) return true;
+		if ( typeof cb.handleEvent != 'function' ) return true;
 
 		args = args.slice( 0 );
 
@@ -920,7 +920,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 	function findIndex( observer, queue, fn, ctx ) {
 		var cb, i = -1; ctx || ( ctx = observer );
 
-		!is_str( fn ) || ( fn = ctx[fn] );
+		typeof fn != 'string' || ( fn = ctx[fn] );
 
 		while ( cb = queue[++i] ) {
 			if ( cb === fn || ( cb.fn === fn && cb.ctx === ctx ) ) {
@@ -949,7 +949,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 
 	function handleEvent( cb ) {
 		return function handleEvent() {
-			return is_fun( cb.handleEvent ) ? cb.handleEvent.apply( cb, arguments ) : U;
+			return typeof cb.handleEvent == 'function' ? cb.handleEvent.apply( cb, arguments ) : U;
 		};
 	}
 
@@ -1102,7 +1102,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 					case 'string'     :
 						if ( is_obj( ctx ) )
 							fn  = ctx[fn];
-						else if ( is_fun( this[fn] ) ) {
+						else if ( typeof this[fn] == 'function' ) {
 							fn  = this[fn];
 							ctx = this;
 						}

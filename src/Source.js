@@ -76,7 +76,7 @@ __lib__.define( namespace( 'Source' ), function() {
 			default : args = Array.coerce( arguments, 1 );
 		}
 
-		if ( !is_str( name ) ) { // warning! doing it this way cannot guarantee order of execution!
+		if ( typeof name != 'string' ) { // warning! doing it this way cannot guarantee order of execution!
 			args = name;
 
 			Object.getOwnPropertyNames( mx ).map( function( name ) {
@@ -86,10 +86,10 @@ __lib__.define( namespace( 'Source' ), function() {
 //			return get_return_value( this, UNDEF );
 		}
 		else
-			return_value = mx[name] && is_fun( mx[name][method] ) ? mx[name][method].apply( this, args ) : UNDEF;
+			return_value = mx[name] && typeof mx[name][method] == 'function' ? mx[name][method].apply( this, args ) : UNDEF;
 
 		return this[__chain__] === true && return_value === UNDEF ? this : return_value;
-//		return get_return_value( this, ( mx[name] && is_fun( mx[name][method] ) ? mx[name][method].apply( this, args ) : UNDEF ) );
+//		return get_return_value( this, ( mx[name] && typeof mx[name][method] == 'function' ? mx[name][method].apply( this, args ) : UNDEF ) );
 	}
 
 	return {
@@ -114,7 +114,7 @@ __lib__.define( namespace( 'Source' ), function() {
 // constructor methods
 		applyConfig : function( config ) {
 			!is_obj( config ) || Object.keys( config ).forEach( function( key ) {
-				if ( is_fun( config[key] ) && is_fun( this[key] ) ) // this allows you to override a method for a
+				if ( typeof config[key] == 'function' && typeof this[key] == 'function' ) // this allows you to override a method for a
 					this[__override__]( key, config[key] );         // specific instance of a Class, rather than require
 				else                                                // you extend the Class for a few minor changes
 					this[key] = config[key];                        // NB: can also be achieved by creating a `singleton`

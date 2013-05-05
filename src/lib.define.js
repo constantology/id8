@@ -26,7 +26,7 @@ util.def( __lib__, 'define', function() {
 		if ( !class_config.singleton )
 			Constructor = Class;
 		else { // weird shizzle in chrome is making me have to do shizzle like thizzle!!!
-			if ( is_fun( Class ) )
+			if ( typeof Class == 'function' )
 				Class = make_singleton( Class, class_config.singleton );
 
 			Constructor = Class.constructor;
@@ -42,11 +42,11 @@ util.def( __lib__, 'define', function() {
 
 		class_config.singleton || process_after( Constructor );
 
-		if ( is_str( descriptor.path ) && util.AMD )
+		if ( typeof descriptor.path == 'string' && util.AMD )
 			util.define( descriptor.path, Class );
 
 		return Class;
-//		return class_config.singleton && is_fun( Class ) ? Class() : Class;
+//		return class_config.singleton && typeof Class == 'function' ? Class() : Class;
 	}
 
 	function decorate( Class, class_name, no_register ) {

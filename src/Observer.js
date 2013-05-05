@@ -1,6 +1,6 @@
 __lib__.define( namespace( 'Observer' ), function() {
 	function broadcast( args, cb ) {
-		if ( !is_fun( cb.handleEvent ) ) return true;
+		if ( typeof cb.handleEvent != 'function' ) return true;
 
 		args = args.slice( 0 );
 
@@ -49,7 +49,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 	function findIndex( observer, queue, fn, ctx ) {
 		var cb, i = -1; ctx || ( ctx = observer );
 
-		!is_str( fn ) || ( fn = ctx[fn] );
+		typeof fn != 'string' || ( fn = ctx[fn] );
 
 		while ( cb = queue[++i] ) {
 			if ( cb === fn || ( cb.fn === fn && cb.ctx === ctx ) ) {
@@ -78,7 +78,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 
 	function handleEvent( cb ) {
 		return function handleEvent() {
-			return is_fun( cb.handleEvent ) ? cb.handleEvent.apply( cb, arguments ) : U;
+			return typeof cb.handleEvent == 'function' ? cb.handleEvent.apply( cb, arguments ) : U;
 		};
 	}
 
@@ -231,7 +231,7 @@ __lib__.define( namespace( 'Observer' ), function() {
 					case 'string'     :
 						if ( is_obj( ctx ) )
 							fn  = ctx[fn];
-						else if ( is_fun( this[fn] ) ) {
+						else if ( typeof this[fn] == 'function' ) {
 							fn  = this[fn];
 							ctx = this;
 						}

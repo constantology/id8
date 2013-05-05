@@ -19,7 +19,7 @@ util.def( __lib__, 'Class', function() {
 			for ( name in name_current )
 				!util.has( name_current, name ) || alias.call( this, name, name_current[name] );
 		}
-		else if ( is_fun( proto[name_current] ) )
+		else if ( typeof proto[name_current] == 'function' )
 			util.def( proto, name_alias, get_method_descriptor( proto, name_current ), true );
 
 		return this;
@@ -38,14 +38,14 @@ util.def( __lib__, 'Class', function() {
 			for ( name in method )
 				!util.has( method, name ) || override.call( this, name, method[name] );
 		}
-		else if ( is_fun( method ) )
+		else if ( typeof method == 'function' )
 			proto[name] = make_method( 'original', method, get_method_descriptor( proto, name ), name );
 
 		return this;
 	}
 
 	function override_instance_method( name, method ) {
-		if ( is_fun( method ) )
+		if ( typeof method == 'function' )
 			this[name] = make_method( 'original', method, get_method_descriptor( this, name ), name );
 
 		return this;
@@ -68,7 +68,7 @@ util.def( __lib__, 'Class', function() {
 
 	function get_method_descriptor( o, k ) {
 		var desc = Object.getOwnPropertyDescriptor( o, k )
-				|| ( is_fun( o[k] )
+				|| ( typeof o[k] == 'function'
 				   ? util.describe( o[k], 'cw' )
 				   : desc_default_super );
 		desc.writable = true;
@@ -159,19 +159,21 @@ util.def( __lib__, 'Class', function() {
 			super_class  = class_config.extend;
 
 // weird shizzle in chrome is making me have to do shizzle like thizzle!!!
-		if ( ( is_str( class_config.extend ) && !is_str( super_class ) ) || ( is_fun( class_config.extend ) && !is_fun( super_class ) ) )
+		if ( ( typeof class_config.extend == 'string' && typeof super_class != 'string' ) || ( typeof class_config.extend == 'function' && typeof super_class != 'function' ) )
 			super_class  = class_config.extend;
 
 // if extending then make sure we have a Class to extend from, or else extend Object
-		!is_str( super_class ) || ( super_class = get( super_class ) );
-		 is_fun( super_class ) || ( super_class = Object );
+		if ( typeof super_class == 'string' )
+			super_class = get( super_class );
+		if ( typeof super_class != 'function' )
+			super_class = Object;
 
 // weird shizzle in chrome is making me have to do shizzle like thizzle!!!
-		 if ( is_fun( class_config.extend ) && super_class !== class_config.extend )
+		 if ( typeof class_config.extend == 'function' && super_class !== class_config.extend )
 			super_class  = class_config.extend;
 
 // make sure we have a constructor and if using the "extend", not Class
-		( is_fun( ctor ) && ctor !== Object ) || ( ctor = super_class.valueOf() );
+		( typeof ctor == 'function' && ctor !== Object ) || ( ctor = super_class.valueOf() );
 
 // set a type for this Class' instances if one is not defined
 		util.exists( class_config.type )
@@ -224,7 +226,7 @@ util.def( __lib__, 'Class', function() {
 	}
 
 	function add_processor( fn ) {
-		!is_fun( fn ) || this.indexOf( fn ) > -1 || this.push( fn );
+		typeof fn != 'function' || this.indexOf( fn ) > -1 || this.push( fn );
 	}
 	function make_processable( Class, config ) {
 		var after = [], before = [], super_class = internals[config.extend[__guid__]];
@@ -265,11 +267,11 @@ util.def( __lib__, 'Class', function() {
 // that has no Super Class, without throwing any errors...
 		Object.getOwnPropertyNames( prototype ).forEach( function( key ) {
 // skip non-methods and already processed properties
-			 key in processed    || key in internal_method_names ||
-			!is_fun( this[key] ) || add.call( this, key, util.describe( make_method( 'parent', this[key], desc_default_super, key ), 'cw' ) );
+			key in processed || key in internal_method_names ||
+			typeof this[key] != 'function' || add.call( this, key, util.describe( make_method( 'parent', this[key], desc_default_super, key ), 'cw' ) );
 		}, prototype );
 
-		!is_str( class_config.type ) || util.def( prototype, __type__, class_config.type, 'c', true );
+		typeof class_config.type != 'string' || util.def( prototype, __type__, class_config.type, 'c', true );
 
 		if ( !( __override__ in prototype ) )
 			prototype[__override__] = override_instance_method;
