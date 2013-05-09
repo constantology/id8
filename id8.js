@@ -1024,6 +1024,8 @@ __lib__.define( namespace( 'Observer' ), function() {
 		broadcast          : function( event ) {
 			if ( this.destroyed || this.observer_suspended || !this.listeners.length || !event ) return;
 
+			event     = String( event ).toLowerCase();
+
 			var queue = getListeners( this, event ); // in any case will return a different array to the queue to ensure
 													 // any listeners added or removed during broadcast don't affect the
 													 // current broadcast
